@@ -1,0 +1,27 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+# Android / Gradle Build Folders (Wajib)
+.gradle/
+build/
+app/build/
+**/build/
+
+# Local configuration files
+local.properties
+.navigation/
+.captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Miscellaneous
+.DS_Store
+*.apk
+*.aar
