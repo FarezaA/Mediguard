@@ -1,6 +1,13 @@
 package com.mediguard.app.ui.screens.patient
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,13 +25,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.mediguard.app.data.model.*
 import com.mediguard.app.data.repository.MediGuardRepository
+import com.mediguard.app.ui.screens.common.AsyncPhotoPreviewDialog
 import com.mediguard.app.ui.theme.*
+import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,6 +49,9 @@ fun PatientDashboardScreen(
     onNavigateToMedications: () -> Unit,
     onNavigateToRooms: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val currentUser by repository.currentUser.collectAsState()
     val doseEvents by repository.doseEvents.collectAsState()
     val medications by repository.medications.collectAsState()
@@ -43,8 +61,47 @@ fun PatientDashboardScreen(
     var actionType by remember { mutableStateOf<String?>(null) } // "TAKE", "MISS", "SNOOZE"
     var missReason by remember { mutableStateOf("") }
     var takenTime by remember { mutableStateOf("") }
-    var photoUriInput by remember { mutableStateOf<String?>("bukti_minum_obat.jpg") }
+    var photoUriInput by remember { mutableStateOf<String?>(null) }
     var previewPhotoDose by remember { mutableStateOf<DoseEvent?>(null) }
+
+    // Real Camera & Upload States
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var capturedBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var isUploadingPhoto by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            capturedBitmap = bitmap
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+            capturedBytes = stream.toByteArray()
+            photoUriInput = "bukti_kamera_${System.currentTimeMillis()}.jpg"
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        } else {
+            Toast.makeText(context, "Izin kamera diperlukan untuk mengambil foto bukti", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val requestCamera = {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            cameraLauncher.launch(null)
+        } else {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     val todayFormatted = remember {
         val cal = Calendar.getInstance()
@@ -364,6 +421,10 @@ fun PatientDashboardScreen(
                         actionType = "TAKE"
                         val timeSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
                         takenTime = timeSdf.format(Date())
+                        capturedBitmap = null
+                        capturedBytes = null
+                        photoUriInput = null
+                        isUploadingPhoto = false
                     },
                     onMissClick = {
                         selectedDoseForAction = dose
@@ -387,7 +448,13 @@ fun PatientDashboardScreen(
     // ── Dialog: Konfirmasi Konsumsi Obat ──
     if (selectedDoseForAction != null && actionType == "TAKE") {
         AlertDialog(
-            onDismissRequest = { selectedDoseForAction = null },
+            onDismissRequest = {
+                if (!isUploadingPhoto) {
+                    selectedDoseForAction = null
+                    capturedBitmap = null
+                    capturedBytes = null
+                }
+            },
             shape = RoundedCornerShape(20.dp),
             containerColor = SurfaceCard,
             title = {
@@ -452,48 +519,101 @@ fun PatientDashboardScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Photo Proof Card
+                    // Photo Proof Camera Integration
                     Surface(
                         color = Color(0xFFF0FDF4),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = StatusVerified, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Bukti Foto Minum Obat (Wajib):", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = StatusVerifiedText)
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Foto membantu pemantau memeriksa laporan sebelum memberikan verifikasi langsung.",
-                                fontSize = 11.sp,
-                                color = Color(0xFF14532D)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = photoUriInput ?: "Belum ada foto",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = TextDark
-                                )
-                                OutlinedButton(
-                                    onClick = {
-                                        photoUriInput = "foto_konsumsi_${System.currentTimeMillis()}.jpg"
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    border = BorderStroke(1.dp, StatusVerified)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = StatusVerified, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Bukti Foto Minum Obat:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = StatusVerifiedText)
+                                }
+                                Surface(
+                                    color = if (capturedBitmap != null) Color(0xFFDCFCE7) else Color(0xFFFEF3C7),
+                                    shape = RoundedCornerShape(50.dp)
                                 ) {
-                                    Text("Ambil Foto", fontSize = 11.sp, color = StatusVerified)
+                                    Text(
+                                        text = if (capturedBitmap != null) "✓ Foto Siap" else "Wajib",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (capturedBitmap != null) Color(0xFF166534) else Color(0xFF92400E)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = "Akses kamera fisik untuk mengambil foto bukti obat/gelas minum secara langsung.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF14532D),
+                                lineHeight = 15.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            if (capturedBitmap != null) {
+                                Card(
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Image(
+                                        bitmap = capturedBitmap!!.asImageBitmap(),
+                                        contentDescription = "Hasil Foto Kamera",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(150.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = photoUriInput ?: "Foto berhasil diambil",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = StatusVerifiedText
+                                    )
+                                    OutlinedButton(
+                                        onClick = { requestCamera() },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        border = BorderStroke(1.dp, StatusVerified)
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(13.dp), tint = StatusVerified)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Ambil Ulang", fontSize = 11.sp, color = StatusVerified)
+                                    }
+                                }
+                            } else {
+                                Button(
+                                    onClick = { requestCamera() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = StatusVerified)
+                                ) {
+                                    Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Buka Kamera & Potret Bukti", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -501,7 +621,7 @@ fun PatientDashboardScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Transparansi: Laporan mandiri Anda akan tercatat di log audit dan dapat dipantau keluarga.",
+                        text = "Transparansi: Bukti foto nyata akan otomatis tersinkronisasi ke perangkat pemantau keluarga.",
                         fontSize = 11.sp,
                         color = TextMuted,
                         lineHeight = 15.sp
@@ -511,20 +631,46 @@ fun PatientDashboardScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        selectedDoseForAction?.let {
-                            repository.reportDoseTaken(it.id, takenTime, photoUriInput)
+                        selectedDoseForAction?.let { dose ->
+                            if (capturedBytes != null) {
+                                isUploadingPhoto = true
+                                coroutineScope.launch {
+                                    val filename = "bukti_${dose.id}_${System.currentTimeMillis()}.jpg"
+                                    val uploadedUrl = repository.uploadPhoto(capturedBytes!!, filename)
+                                    repository.reportDoseTaken(dose.id, takenTime, uploadedUrl)
+                                    isUploadingPhoto = false
+                                    selectedDoseForAction = null
+                                    capturedBitmap = null
+                                    capturedBytes = null
+                                    Toast.makeText(context, "Laporan mandiri berhasil dikirim bersama bukti foto nyata!", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Silakan ambil foto bukti obat terlebih dahulu melalui kamera", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                        selectedDoseForAction = null
                     },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
-                    enabled = !photoUriInput.isNullOrBlank()
+                    enabled = (capturedBitmap != null || !photoUriInput.isNullOrBlank()) && !isUploadingPhoto
                 ) {
-                    Text("Kirim Laporan Mandiri", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (isUploadingPhoto) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Mengunggah Foto...", fontSize = 13.sp)
+                    } else {
+                        Text("Kirim Laporan Mandiri", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedDoseForAction = null }) {
+                TextButton(
+                    onClick = {
+                        selectedDoseForAction = null
+                        capturedBitmap = null
+                        capturedBytes = null
+                    },
+                    enabled = !isUploadingPhoto
+                ) {
                     Text("Batal", fontSize = 13.sp, color = TextMuted)
                 }
             }
@@ -534,69 +680,13 @@ fun PatientDashboardScreen(
     // ── Dialog: Preview Foto Bukti ──
     if (previewPhotoDose != null) {
         val dose = previewPhotoDose!!
-        AlertDialog(
-            onDismissRequest = { previewPhotoDose = null },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = SurfaceCard,
-            title = {
-                Text("Bukti Foto Minum Obat", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark)
-            },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSubtle),
-                        border = BorderStroke(1.dp, SurfaceBorder)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Default.CameraAlt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(46.dp),
-                                    tint = TealPrimary
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = dose.photoUri ?: "",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = TextDark
-                                )
-                                Text(
-                                    text = "Terlampir pada laporan pasien",
-                                    fontSize = 11.sp,
-                                    color = TextMuted
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "${dose.medicationName} (${dose.dosage})",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = TextDark
-                    )
-                    Text(
-                        text = "Waktu minum dilaporkan: ${dose.takenAt ?: "-"}",
-                        fontSize = 12.sp,
-                        color = TextMuted
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { previewPhotoDose = null },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
-                ) {
-                    Text("Tutup", fontSize = 13.sp)
-                }
-            }
+        AsyncPhotoPreviewDialog(
+            photoUri = dose.photoUri,
+            medicationName = dose.medicationName,
+            dosage = dose.dosage,
+            takenAt = dose.takenAt,
+            repository = repository,
+            onDismiss = { previewPhotoDose = null }
         )
     }
 

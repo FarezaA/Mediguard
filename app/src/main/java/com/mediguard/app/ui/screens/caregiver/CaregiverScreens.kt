@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mediguard.app.data.model.*
 import com.mediguard.app.data.repository.MediGuardRepository
+import com.mediguard.app.ui.screens.common.AsyncPhotoPreviewDialog
 import com.mediguard.app.ui.screens.patient.DoseStatusBadge
 import com.mediguard.app.ui.theme.*
 import java.util.*
@@ -740,15 +741,25 @@ fun CaregiverDashboardScreen(
                         Surface(
                             color = Color(0xFFEFF6FF),
                             shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(8.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Bukti Foto: ${dose.photoUri}", fontSize = 11.sp, color = AccentCyan, fontWeight = FontWeight.Medium)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Bukti Foto Terlampir", fontSize = 11.sp, color = AccentCyan, fontWeight = FontWeight.SemiBold)
+                                }
+                                TextButton(
+                                    onClick = { previewPhotoUri = dose.photoUri },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("Lihat Foto", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AccentCyan)
+                                }
                             }
                         }
                     }
@@ -816,43 +827,13 @@ fun CaregiverDashboardScreen(
 
     // ── Dialog: Preview Foto ──
     if (previewPhotoUri != null) {
-        AlertDialog(
-            onDismissRequest = { previewPhotoUri = null },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = SurfaceCard,
-            title = { Text("Pemeriksaan Foto Bukti Pasien", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark) },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSubtle),
-                        border = BorderStroke(1.dp, SurfaceBorder)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(48.dp), tint = TealPrimary)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text("Foto Bukti: $previewPhotoUri", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TextDark)
-                                Text("Terlampir pada laporan pasien", fontSize = 11.sp, color = TextMuted)
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Periksa foto sebelum menyetujui verifikasi.", fontSize = 12.sp, color = TextMuted)
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { previewPhotoUri = null },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
-                ) {
-                    Text("Tutup", fontSize = 13.sp)
-                }
-            }
+        AsyncPhotoPreviewDialog(
+            photoUri = previewPhotoUri,
+            medicationName = "Bukti Foto Pasien",
+            dosage = "Laporan Mandiri",
+            takenAt = "Dilaporkan Pasien",
+            repository = repository,
+            onDismiss = { previewPhotoUri = null }
         )
     }
 }

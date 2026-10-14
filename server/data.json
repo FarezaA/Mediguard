@@ -1,0 +1,244 @@
+{
+  "users": [
+    {
+      "id": "user_patient_1",
+      "name": "Hendra Wijaya",
+      "email": "hendra@mediguard.com",
+      "password": "password123",
+      "roles": [
+        "PASIEN"
+      ],
+      "activeRole": "PASIEN"
+    },
+    {
+      "id": "user_caregiver_1",
+      "name": "Siti Rahmawati",
+      "email": "siti@mediguard.com",
+      "password": "password123",
+      "roles": [
+        "PEMANTAU"
+      ],
+      "activeRole": "PEMANTAU"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room_1",
+      "ownerUserId": "user_patient_1",
+      "ownerName": "Hendra Wijaya",
+      "name": "Ruang Obat Hendra",
+      "description": "Pemantauan pengobatan hipertensi rutin",
+      "inviteCode": "MG-8821",
+      "createdAt": "2026-10-14"
+    },
+    {
+      "id": "room_1791985071190",
+      "ownerUserId": "user_patient_1",
+      "ownerName": "Hendra Wijaya",
+      "name": "RSJ",
+      "description": "Gwndeenbg",
+      "inviteCode": "MG-7497",
+      "createdAt": "2026-10-14 20:37"
+    }
+  ],
+  "roomMembers": [
+    {
+      "id": "member_1",
+      "roomId": "room_1",
+      "userId": "user_caregiver_1",
+      "userName": "Siti Rahmawati",
+      "userEmail": "siti@mediguard.com",
+      "role": "PEMANTAU",
+      "status": "APPROVED",
+      "requestedAt": "2026-10-14 07:00",
+      "canViewSchedules": true,
+      "canViewActivities": true,
+      "canViewStats": true
+    }
+  ],
+  "medications": [
+    {
+      "id": "med_1",
+      "roomId": "room_1",
+      "name": "Amlodipine",
+      "form": "Tablet",
+      "dosage": "5 mg",
+      "instructions": "1x sehari, sesudah makan pagi",
+      "notes": "Obat rutin tekanan darah tinggi",
+      "startDate": "2026-10-14",
+      "endDate": "",
+      "isArchived": false
+    },
+    {
+      "id": "med_2",
+      "roomId": "room_1",
+      "name": "Metformin",
+      "form": "Tablet",
+      "dosage": "500 mg",
+      "instructions": "2x sehari, bersama makan",
+      "notes": "Pengontrol gula darah",
+      "startDate": "2026-10-14",
+      "endDate": "",
+      "isArchived": false
+    }
+  ],
+  "schedules": [
+    {
+      "id": "sched_1",
+      "medicationId": "med_1",
+      "frequency": "1x sehari",
+      "times": [
+        "08:00"
+      ],
+      "startDate": "2026-10-14",
+      "endDate": "",
+      "isActive": true
+    },
+    {
+      "id": "sched_2",
+      "medicationId": "med_2",
+      "frequency": "2x sehari",
+      "times": [
+        "08:00",
+        "20:00"
+      ],
+      "startDate": "2026-10-14",
+      "endDate": "",
+      "isActive": true
+    }
+  ],
+  "doseEvents": [
+    {
+      "id": "dose_1",
+      "medicationId": "med_1",
+      "medicationName": "Amlodipine",
+      "dosage": "5 mg",
+      "instructions": "1x sehari, sesudah makan pagi",
+      "scheduledTime": "08:00",
+      "status": "TERVERIFIKASI_LANGSUNG",
+      "takenAt": "20:35",
+      "reportedAt": "2026-10-14 20:36",
+      "verification": {
+        "verifiedByUserId": "user_caregiver_1",
+        "verifierName": "Siti Rahmawati",
+        "verifiedAt": "2026-10-14 20:37",
+        "statement": "Menyaksikan langsung saat obat dikonsumsi",
+        "isDirectObservation": true,
+        "notes": null
+      },
+      "notes": null,
+      "snoozedUntil": null,
+      "reminderCount": 1,
+      "photoUri": "http://192.168.1.28:8080/uploads/bukti_dose_1_1791984972376.jpg"
+    },
+    {
+      "id": "dose_2",
+      "medicationId": "med_2",
+      "medicationName": "Metformin",
+      "dosage": "500 mg",
+      "instructions": "2x sehari, bersama makan",
+      "scheduledTime": "08:00",
+      "status": "DILAPORKAN_DIMINUM",
+      "takenAt": "08:15",
+      "reportedAt": "2026-10-14 08:15",
+      "verification": null,
+      "notes": "Sudah diminum bersama sarapan bubur",
+      "snoozedUntil": null,
+      "reminderCount": 0,
+      "photoUri": "/uploads/sample_metformin.jpg"
+    },
+    {
+      "id": "dose_3",
+      "medicationId": "med_2",
+      "medicationName": "Metformin",
+      "dosage": "500 mg",
+      "instructions": "2x sehari, bersama makan",
+      "scheduledTime": "20:00",
+      "status": "TERJADWAL",
+      "takenAt": null,
+      "reportedAt": null,
+      "verification": null,
+      "notes": null,
+      "snoozedUntil": null,
+      "reminderCount": 0,
+      "photoUri": null
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1791985024514_0.7514158547488831",
+      "userId": "user_patient_1",
+      "title": "Dosis Terverifikasi Nyata ✓",
+      "body": "Siti Rahmawati telah memverifikasi konsumsi obat Amlodipine Anda melalui pengamatan langsung.",
+      "type": "DOSE_VERIFIED",
+      "relatedId": "dose_1",
+      "isRead": false,
+      "createdAt": "2026-10-14 20:37"
+    },
+    {
+      "id": "notif_1791984973225_0.6103392474726868",
+      "userId": "user_caregiver_1",
+      "title": "Laporan Minum Obat Masuk",
+      "body": "Hendra Wijaya telah melaporkan minum Amlodipine (5 mg) pada 20:35. Silakan verifikasi jika menyaksikan langsung.",
+      "type": "DOSE_REPORTED",
+      "relatedId": "dose_1",
+      "isRead": false,
+      "createdAt": "2026-10-14 20:36"
+    },
+    {
+      "id": "notif_1",
+      "userId": "user_caregiver_1",
+      "title": "Laporan Baru dari Pasien",
+      "body": "Hendra telah melaporkan minum Metformin (08:00). Silakan verifikasi bila menyaksikan langsung.",
+      "type": "DOSE_REPORTED",
+      "relatedId": "dose_2",
+      "isRead": false,
+      "createdAt": "2026-10-14 08:16"
+    },
+    {
+      "id": "notif_2",
+      "userId": "user_patient_1",
+      "title": "Jadwal Obat Pagi",
+      "body": "Saatnya minum Amlodipine 5 mg (Jadwal: 08:00). Jangan lupa ambil foto bukti minum obat!",
+      "type": "REMINDER",
+      "relatedId": "dose_1",
+      "isRead": false,
+      "createdAt": "2026-10-14 08:00"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log_1791985024514",
+      "actorId": "user_caregiver_1",
+      "actorName": "Siti Rahmawati",
+      "action": "VERIFIKASI_LANGSUNG",
+      "details": "Memverifikasi secara nyata konsumsi Amlodipine oleh pasien.",
+      "timestamp": "2026-10-14 20:37"
+    },
+    {
+      "id": "log_1791984973190",
+      "actorId": "user_patient_1",
+      "actorName": "Hendra Wijaya",
+      "action": "LAPORAN_MANDIRI",
+      "details": "Melaporkan minum obat Amlodipine (5 mg) pada 20:35.",
+      "timestamp": "2026-10-14 20:36"
+    },
+    {
+      "id": "log_1",
+      "actorId": "user_patient_1",
+      "actorName": "Hendra Wijaya",
+      "action": "LAPORAN_MANDIRI",
+      "details": "Melaporkan minum obat Metformin (08:00) pada 08:15.",
+      "timestamp": "2026-10-14 08:15"
+    },
+    {
+      "id": "log_2",
+      "actorId": "system",
+      "actorName": "Sistem MediGuard",
+      "action": "PENGINGAT_OTOMATIS",
+      "details": "Notifikasi pengingat otomatis dikirim ke Hendra untuk Amlodipine (08:00).",
+      "timestamp": "2026-10-14 08:00"
+    }
+  ],
+  "version": 5
+}

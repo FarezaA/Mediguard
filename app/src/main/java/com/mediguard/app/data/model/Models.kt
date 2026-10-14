@@ -147,8 +147,8 @@ data class AuditLog(
     val actorUserId: String,
     val actorName: String,
     val action: String,
-    val entityType: String,
-    val entityId: String,
+    val entityType: String = "",
+    val entityId: String = "",
     val details: String,
     val timestamp: String
 )

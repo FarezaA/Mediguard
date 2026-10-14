@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.mediguard.app.data.model.UserRole
 import com.mediguard.app.data.repository.MediGuardRepository
 import com.mediguard.app.ui.navigation.NavRoute
+import com.mediguard.app.ui.screens.common.ServerConfigDialog
 import com.mediguard.app.ui.theme.*
 
 @Composable
@@ -369,6 +370,10 @@ fun LoginScreen(
     repository: MediGuardRepository,
     onNavigate: (String) -> Unit
 ) {
+    val isOnline by repository.isOnline.collectAsState()
+    val serverUrl by repository.serverUrl.collectAsState()
+    var showServerDialog by remember { mutableStateOf(false) }
+
     var email by remember { mutableStateOf("hendra@mediguard.com") }
     var password by remember { mutableStateOf("password123") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -383,6 +388,49 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Online Server Status Banner
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { showServerDialog = true },
+            color = if (isOnline) Color(0xFFF0FDF4) else Color(0xFFFEF2F2),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, if (isOnline) Color(0xFFBBF7D0) else Color(0xFFFECACA))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(if (isOnline) Color(0xFF16A34A) else Color(0xFFDC2626))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = if (isOnline) "Server Online ($serverUrl)" else "Server Offline / Klik Atur IP",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isOnline) Color(0xFF15803D) else Color(0xFFB91C1C)
+                        )
+                        Text(
+                            text = "Sinkronisasi real-time antar-perangkat aktif",
+                            fontSize = 10.sp,
+                            color = TextMuted
+                        )
+                    }
+                }
+                Icon(Icons.Default.Settings, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Header
         Box(
@@ -624,6 +672,15 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (showServerDialog) {
+        ServerConfigDialog(
+            currentUrl = serverUrl,
+            isOnline = isOnline,
+            onSaveUrl = { repository.setServerUrl(it) },
+            onDismiss = { showServerDialog = false }
+        )
     }
 }
 

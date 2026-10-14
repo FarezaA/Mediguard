@@ -1,0 +1,9 @@
+{
+  "name": "mediguard-server",
+  "version": "1.0.0",
+  "description": "MediGuard Multi-Device Sync & Photo Upload Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

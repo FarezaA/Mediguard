@@ -1,6 +1,8 @@
 package com.mediguard.app.ui.screens.common
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mediguard.app.data.model.NotificationItem
@@ -35,7 +40,10 @@ fun MainScreen(
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val notifications by repository.notifications.collectAsState()
+    val isOnline by repository.isOnline.collectAsState()
+    val serverUrl by repository.serverUrl.collectAsState()
 
+    var showServerConfigDialog by remember { mutableStateOf(false) }
     var selectedPatientTab by remember { mutableStateOf(0) }
     var selectedCaregiverTab by remember { mutableStateOf(0) }
 
@@ -89,6 +97,36 @@ fun MainScreen(
                     }
                 },
                 actions = {
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50.dp))
+                            .clickable { showServerConfigDialog = true },
+                        color = if (isOnline) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                        shape = RoundedCornerShape(50.dp),
+                        border = BorderStroke(1.dp, if (isOnline) Color(0xFF86EFAC) else Color(0xFFFCA5A5))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isOnline) Color(0xFF16A34A) else Color(0xFFDC2626))
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = if (isOnline) "Online" else "Offline",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isOnline) Color(0xFF15803D) else Color(0xFFB91C1C)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
                     IconButton(onClick = { onNavigate(NavRoute.Notifications.route) }) {
                         BadgedBox(
                             badge = {
@@ -276,6 +314,15 @@ fun MainScreen(
             }
         }
     }
+
+    if (showServerConfigDialog) {
+        ServerConfigDialog(
+            currentUrl = serverUrl,
+            isOnline = isOnline,
+            onSaveUrl = { newUrl -> repository.setServerUrl(newUrl) },
+            onDismiss = { showServerConfigDialog = false }
+        )
+    }
 }
 
 // ---------------- NOTIFICATIONS SCREEN ----------------
@@ -438,8 +485,11 @@ fun ProfileScreen(
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val allUsers by repository.users.collectAsState()
+    val isOnline by repository.isOnline.collectAsState()
+    val serverUrl by repository.serverUrl.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
+    var showServerConfigDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -553,6 +603,75 @@ fun ProfileScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+                }
+            }
+        }
+
+        // Real-Time Server Sync Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                border = BorderStroke(1.dp, SurfaceBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Lan, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "KONEKSI SERVER REAL-TIME",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = TextMuted,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                        Surface(
+                            color = if (isOnline) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                            shape = RoundedCornerShape(50.dp)
+                        ) {
+                            Text(
+                                text = if (isOnline) "● Terhubung" else "● Terputus",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isOnline) Color(0xFF15803D) else Color(0xFFB91C1C)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Sinkronisasi antar-perangkat (Pasien & Pemantau) berjalan via server:",
+                        fontSize = 12.sp,
+                        color = TextMuted
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = serverUrl,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TealPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = { showServerConfigDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Ubah Alamat IP Server", fontSize = 12.sp)
                     }
                 }
             }
@@ -704,4 +823,272 @@ fun ProfileScreen(
             }
         )
     }
+
+    if (showServerConfigDialog) {
+        ServerConfigDialog(
+            currentUrl = serverUrl,
+            isOnline = isOnline,
+            onSaveUrl = { newUrl -> repository.setServerUrl(newUrl) },
+            onDismiss = { showServerConfigDialog = false }
+        )
+    }
+}
+
+// ---------------- DIALOGS FOR ONLINE SYNC & PHOTO PREVIEW ----------------
+
+@Composable
+fun ServerConfigDialog(
+    currentUrl: String,
+    isOnline: Boolean,
+    onSaveUrl: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var urlInput by remember { mutableStateOf(currentUrl) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = SurfaceCard,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isOnline) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isOnline) Icons.Default.Wifi else Icons.Default.WifiOff,
+                        contentDescription = null,
+                        tint = if (isOnline) Color(0xFF16A34A) else Color(0xFFDC2626),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text("Koneksi Server Online", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
+                    Text(
+                        text = if (isOnline) "Status: Terhubung (Online)" else "Status: Terputus (Offline)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isOnline) Color(0xFF15803D) else Color(0xFFB91C1C)
+                    )
+                }
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Hubungkan perangkat fisik lain atau emulator ke server backend yang sama untuk menguji sinkronisasi real-time ruangan obat dan notifikasi.",
+                    fontSize = 12.sp,
+                    color = TextMuted,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = { urlInput = it },
+                    label = { Text("URL Server MediGuard") },
+                    leadingIcon = { Icon(Icons.Default.Lan, contentDescription = null, tint = TextMuted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = TealPrimary,
+                        unfocusedBorderColor = SurfaceBorder
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text("Pilihan Cepat (Preset):", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { urlInput = "http://192.168.1.28:8080" },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Wi-Fi LAN", fontSize = 10.sp)
+                    }
+                    OutlinedButton(
+                        onClick = { urlInput = "http://10.0.2.2:8080" },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Emulator", fontSize = 10.sp)
+                    }
+                    OutlinedButton(
+                        onClick = { urlInput = "http://localhost:8080" },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Localhost", fontSize = 10.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSaveUrl(urlInput.trim())
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            ) {
+                Text("Simpan & Hubungkan", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", fontSize = 13.sp, color = TextMuted)
+            }
+        }
+    )
+}
+
+@Composable
+fun AsyncPhotoPreviewDialog(
+    photoUri: String?,
+    medicationName: String,
+    dosage: String,
+    takenAt: String?,
+    repository: MediGuardRepository,
+    onDismiss: () -> Unit
+) {
+    var bitmap by remember(photoUri) { mutableStateOf<Bitmap?>(null) }
+    var isLoading by remember(photoUri) { mutableStateOf(true) }
+
+    LaunchedEffect(photoUri) {
+        if (!photoUri.isNullOrBlank()) {
+            isLoading = true
+            bitmap = repository.loadBitmap(photoUri)
+            isLoading = false
+        } else {
+            isLoading = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = SurfaceCard,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(TealContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text("Bukti Foto Pengobatan", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark)
+            }
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceSubtle),
+                    border = BorderStroke(1.dp, SurfaceBorder)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        when {
+                            isLoading -> {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(color = TealPrimary, modifier = Modifier.size(32.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Mengunduh foto bukti dari server...", fontSize = 11.sp, color = TextMuted)
+                                }
+                            }
+                            bitmap != null -> {
+                                Image(
+                                    bitmap = bitmap!!.asImageBitmap(),
+                                    contentDescription = "Bukti Foto",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            else -> {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CameraAlt,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(44.dp),
+                                        tint = TealPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = photoUri ?: "Belum ada berkas foto",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = TextDark,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Bukti foto terlampir dari laporan mandiri pasien.",
+                                        fontSize = 11.sp,
+                                        color = TextMuted,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Surface(
+                    color = SurfaceSubtle,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "$medicationName ($dosage)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = TextDark
+                        )
+                        Text(
+                            text = "Waktu minum: ${takenAt ?: "Sesuai Jadwal"}",
+                            fontSize = 12.sp,
+                            color = TextMuted
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            ) {
+                Text("Tutup", fontSize = 13.sp)
+            }
+        }
+    )
 }
