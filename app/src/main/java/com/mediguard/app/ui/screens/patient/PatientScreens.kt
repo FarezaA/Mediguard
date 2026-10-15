@@ -31,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -166,7 +167,12 @@ fun PatientDashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(44.dp)
@@ -182,18 +188,22 @@ fun PatientDashboardScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
                                     text = "$greetingTime 👋",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.85f),
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = currentUser?.name ?: "Pasien",
-                                    fontSize = 19.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -219,7 +229,12 @@ fun PatientDashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
                                 Icons.Default.CalendarToday,
                                 contentDescription = null,
@@ -231,7 +246,9 @@ fun PatientDashboardScreen(
                                 text = todayFormatted,
                                 fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.90f),
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -255,7 +272,9 @@ fun PatientDashboardScreen(
                                     text = activeRoom?.name ?: "Pilih Ruang",
                                     fontSize = 11.sp,
                                     color = Color.White,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -855,39 +874,45 @@ private fun AdherenceMetricCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 6.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(bgTint),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "$count",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = tint
             )
 
             Text(
                 text = label,
-                fontSize = 12.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = TextDark
+                color = TextDark,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
 
             Text(
                 text = sublabel,
-                fontSize = 10.sp,
-                color = TextMuted
+                fontSize = 9.5.sp,
+                color = TextMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -957,17 +982,21 @@ fun DoseEventCard(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = dose.medicationName,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = TextDark
+                            fontSize = 15.sp,
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${dose.dosage} • ${dose.instructions}",
-                            fontSize = 12.sp,
-                            color = TextMuted
+                            fontSize = 11.5.sp,
+                            color = TextMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -989,26 +1018,34 @@ fun DoseEventCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = TextMuted, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .padding(end = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = TextMuted, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "Jadwal: ${dose.scheduledTime}" + (if (dose.snoozedUntil != null) " (Tunda: ${dose.snoozedUntil})" else ""),
-                            fontSize = 12.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = TextDark
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     if (dose.takenAt != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = StatusTaken, modifier = Modifier.size(15.dp))
+                            Icon(Icons.Default.Check, contentDescription = null, tint = StatusTaken, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Diminum: ${dose.takenAt}",
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = StatusTaken
+                                color = StatusTaken,
+                                maxLines = 1
                             )
                         }
                     }
@@ -1177,37 +1214,83 @@ fun DoseEventCard(
 }
 
 @Composable
-fun DoseStatusBadge(status: DoseStatus) {
-    val (bgColor, textColor, dotColor) = when (status) {
-        DoseStatus.TERJADWAL -> Triple(SurfaceSubtle, TextMuted, StatusScheduled)
-        DoseStatus.MENUNGGU_LAPORAN -> Triple(StatusPendingBg, StatusPendingText, StatusPending)
-        DoseStatus.DILAPORKAN_DIMINUM -> Triple(StatusTakenBg, StatusTakenText, StatusTaken)
-        DoseStatus.TERVERIFIKASI_LANGSUNG -> Triple(StatusVerifiedBg, StatusVerifiedText, StatusVerified)
-        DoseStatus.TERLEWAT -> Triple(StatusMissedBg, StatusMissedText, StatusMissed)
-        DoseStatus.TERLAMBAT_DILAPORKAN -> Triple(StatusLateBg, StatusLateText, StatusLate)
-        DoseStatus.DIBATALKAN -> Triple(SurfaceSubtle, TextLight, Color.Gray)
+fun DoseStatusBadge(
+    status: DoseStatus,
+    modifier: Modifier = Modifier
+) {
+    val bgColor: Color
+    val textColor: Color
+    val dotColor: Color
+    val icon: ImageVector
+
+    when (status) {
+        DoseStatus.TERJADWAL -> {
+            bgColor = SurfaceSubtle
+            textColor = TextMuted
+            dotColor = StatusScheduled
+            icon = Icons.Default.AccessTime
+        }
+        DoseStatus.MENUNGGU_LAPORAN -> {
+            bgColor = StatusPendingBg
+            textColor = StatusPendingText
+            dotColor = StatusPending
+            icon = Icons.Default.Schedule
+        }
+        DoseStatus.DILAPORKAN_DIMINUM -> {
+            bgColor = StatusTakenBg
+            textColor = StatusTakenText
+            dotColor = StatusTaken
+            icon = Icons.Default.Done
+        }
+        DoseStatus.TERVERIFIKASI_LANGSUNG -> {
+            bgColor = StatusVerifiedBg
+            textColor = StatusVerifiedText
+            dotColor = StatusVerified
+            icon = Icons.Default.Verified
+        }
+        DoseStatus.TERLEWAT -> {
+            bgColor = StatusMissedBg
+            textColor = StatusMissedText
+            dotColor = StatusMissed
+            icon = Icons.Default.Cancel
+        }
+        DoseStatus.TERLAMBAT_DILAPORKAN -> {
+            bgColor = StatusLateBg
+            textColor = StatusLateText
+            dotColor = StatusLate
+            icon = Icons.Default.PriorityHigh
+        }
+        DoseStatus.DIBATALKAN -> {
+            bgColor = SurfaceSubtle
+            textColor = TextLight
+            dotColor = TextLight
+            icon = Icons.Default.Block
+        }
     }
 
     Surface(
+        modifier = modifier,
         color = bgColor,
         shape = RoundedCornerShape(50.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(dotColor)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = dotColor,
+                modifier = Modifier.size(12.dp)
             )
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = status.displayName,
-                fontSize = 11.sp,
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = textColor
+                color = textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -2192,13 +2275,14 @@ fun PatientHistoryScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
-                                        Text(text = "${stats.compliancePercentage}%", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = AccentCyan)
-                                        Text(text = "Laporan Mandiri Pasien", fontSize = 12.sp, color = TextMuted)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = "${stats.compliancePercentage}%", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = AccentCyan)
+                                        Text(text = "Laporan Mandiri Pasien", fontSize = 11.5.sp, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Column {
-                                        Text(text = "${stats.verifiedPercentage}%", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = StatusVerified)
-                                        Text(text = "Pengamatan Langsung", fontSize = 12.sp, color = TextMuted)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = "${stats.verifiedPercentage}%", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = StatusVerified)
+                                        Text(text = "Pengamatan Langsung", fontSize = 11.5.sp, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
                             }

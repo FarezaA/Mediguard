@@ -7,6 +7,19 @@ enum class UserRole(val displayName: String) {
     PEMANTAU("Pemantau")
 }
 
+enum class ThemeMode(val displayName: String) {
+    SYSTEM("Sistem"),
+    LIGHT("Terang"),
+    DARK("Gelap")
+}
+
+enum class ColorBlindMode(val displayName: String, val description: String) {
+    OFF("Normal", "Palet warna medis standar"),
+    PROTANOPIA_DEUTERANOPIA("Bebas Merah-Hijau", "Optimal untuk Protanopia & Deuteranopia"),
+    TRITANOPIA("Bebas Biru-Kuning", "Optimal untuk Tritanopia"),
+    HIGH_CONTRAST("Kontras Tinggi", "Kontras visual tinggi untuk keterbacaan maksimal")
+}
+
 data class User(
     val id: String = UUID.randomUUID().toString(),
     val name: String,

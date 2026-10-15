@@ -49,6 +49,41 @@ class MediGuardRepository {
     private val _auditLogs = MutableStateFlow<List<AuditLog>>(emptyList())
     val auditLogs: StateFlow<List<AuditLog>> = _auditLogs.asStateFlow()
 
+    private var sharedPrefs: android.content.SharedPreferences? = null
+
+    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _colorBlindMode = MutableStateFlow(ColorBlindMode.OFF)
+    val colorBlindMode: StateFlow<ColorBlindMode> = _colorBlindMode.asStateFlow()
+
+    fun initPreferences(context: android.content.Context) {
+        val prefs = context.getSharedPreferences("mediguard_settings", android.content.Context.MODE_PRIVATE)
+        sharedPrefs = prefs
+        val savedTheme = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
+        _themeMode.value = try {
+            ThemeMode.valueOf(savedTheme ?: ThemeMode.SYSTEM.name)
+        } catch (_: Exception) {
+            ThemeMode.SYSTEM
+        }
+        val savedColorBlind = prefs.getString("color_blind_mode", ColorBlindMode.OFF.name)
+        _colorBlindMode.value = try {
+            ColorBlindMode.valueOf(savedColorBlind ?: ColorBlindMode.OFF.name)
+        } catch (_: Exception) {
+            ColorBlindMode.OFF
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        sharedPrefs?.edit()?.putString("theme_mode", mode.name)?.apply()
+    }
+
+    fun setColorBlindMode(mode: ColorBlindMode) {
+        _colorBlindMode.value = mode
+        sharedPrefs?.edit()?.putString("color_blind_mode", mode.name)?.apply()
+    }
+
     init {
         // 1. Seed initial local demo data so the app is instantly usable offline
         seedInitialDemoData()
@@ -1113,6 +1148,20 @@ class MediGuardRepository {
         val newCount = event.reminderCount + 1
         val updated = event.copy(reminderCount = newCount)
         _doseEvents.value = _doseEvents.value.map { if (it.id == doseEventId) updated else it }
+
+        val med = _medications.value.find { it.id == event.medicationId }
+        val room = _rooms.value.find { it.id == med?.roomId }
+        val targetPatientId = room?.ownerUserId ?: "user_patient_1"
+
+        val notif = NotificationItem(
+            userId = targetPatientId,
+            title = "Pengingat Minum Obat (#$newCount)",
+            body = "Pemantau ${current.name} mengingatkan Anda untuk meminum ${event.medicationName} (${event.dosage}).",
+            type = NotificationType.REMINDER,
+            relatedEntityId = doseEventId,
+            createdAt = getCurrentTimestamp()
+        )
+        _notifications.value = _notifications.value + notif
 
         syncScope.launch {
             val payload = JSONObject().apply {

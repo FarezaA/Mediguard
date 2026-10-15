@@ -16,7 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mediguard.app.data.model.*
@@ -99,7 +102,12 @@ fun CaregiverDashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(44.dp)
@@ -115,18 +123,22 @@ fun CaregiverDashboardScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
                                     text = "$greetingTime 👋",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.85f),
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = currentUser?.name ?: "Pemantau",
-                                    fontSize = 19.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -152,7 +164,12 @@ fun CaregiverDashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
                                 Icons.Default.CalendarToday,
                                 contentDescription = null,
@@ -163,7 +180,9 @@ fun CaregiverDashboardScreen(
                             Text(
                                 text = today,
                                 fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.85f)
+                                color = Color.White.copy(alpha = 0.85f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -199,7 +218,7 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
@@ -213,7 +232,15 @@ fun CaregiverDashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("${pendingVerifications.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = StatusTaken)
-                        Text("Perlu Verifikasi", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                        Text(
+                            "Perlu Verifikasi",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 
@@ -225,7 +252,7 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
@@ -239,7 +266,15 @@ fun CaregiverDashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("${lateDoses.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = StatusPending)
-                        Text("Belum Lapor", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                        Text(
+                            "Belum Lapor",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 
@@ -251,7 +286,7 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
@@ -265,7 +300,15 @@ fun CaregiverDashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("${approvedRoomIds.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TealPrimary)
-                        Text("Ruang Pasien", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                        Text(
+                            "Ruang Pasien",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -839,25 +882,62 @@ fun CaregiverDashboardScreen(
 }
 
 @Composable
-fun MembershipStatusBadge(status: MembershipStatus) {
-    val (bgColor, textColor) = when (status) {
-        MembershipStatus.APPROVED -> Color(0xFFDCFCE7) to Color(0xFF166534)
-        MembershipStatus.PENDING -> Color(0xFFFEF3C7) to Color(0xFF92400E)
-        MembershipStatus.REJECTED -> Color(0xFFFEE2E2) to Color(0xFF991B1B)
-        MembershipStatus.REVOKED -> Color(0xFFF3F4F6) to Color(0xFF4B5563)
+fun MembershipStatusBadge(
+    status: MembershipStatus,
+    modifier: Modifier = Modifier
+) {
+    val bgColor: Color
+    val textColor: Color
+    val icon: ImageVector
+
+    when (status) {
+        MembershipStatus.APPROVED -> {
+            bgColor = StatusVerifiedBg
+            textColor = StatusVerifiedText
+            icon = Icons.Default.CheckCircle
+        }
+        MembershipStatus.PENDING -> {
+            bgColor = StatusPendingBg
+            textColor = StatusPendingText
+            icon = Icons.Default.Schedule
+        }
+        MembershipStatus.REJECTED -> {
+            bgColor = StatusMissedBg
+            textColor = StatusMissedText
+            icon = Icons.Default.Cancel
+        }
+        MembershipStatus.REVOKED -> {
+            bgColor = SurfaceSubtle
+            textColor = TextLight
+            icon = Icons.Default.Block
+        }
     }
 
     Surface(
+        modifier = modifier,
         color = bgColor,
         shape = RoundedCornerShape(50.dp)
     ) {
-        Text(
-            text = status.displayName,
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = textColor
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = textColor,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = status.displayName,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -1109,7 +1189,10 @@ fun CaregiverRoomsScreen(
                                     text = room?.name ?: "Ruang Pasien",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = TextDark
+                                    color = TextDark,
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 MembershipStatusBadge(status = membership.status)
                             }

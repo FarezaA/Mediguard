@@ -22,10 +22,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mediguard.app.data.model.NotificationItem
-import com.mediguard.app.data.model.UserRole
+import com.mediguard.app.data.model.*
 import com.mediguard.app.data.repository.MediGuardRepository
 import com.mediguard.app.ui.navigation.NavRoute
 import com.mediguard.app.ui.screens.caregiver.*
@@ -487,6 +487,8 @@ fun ProfileScreen(
     val allUsers by repository.users.collectAsState()
     val isOnline by repository.isOnline.collectAsState()
     val serverUrl by repository.serverUrl.collectAsState()
+    val themeMode by repository.themeMode.collectAsState()
+    val colorBlindMode by repository.colorBlindMode.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showServerConfigDialog by remember { mutableStateOf(false) }
@@ -603,6 +605,188 @@ fun ProfileScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+                }
+            }
+        }
+
+        // ── Tampilan & Aksesibilitas Card ──
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                border = BorderStroke(1.dp, SurfaceBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = TealPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "TAMPILAN & AKSESIBILITAS",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = TextMuted,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Tema Tampilan",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = TextDark
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Theme Mode Selector (System, Light, Dark)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ThemeMode.values().forEach { mode ->
+                            val isSelected = themeMode == mode
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { repository.setThemeMode(mode) },
+                                color = if (isSelected) TealContainer else SurfaceSubtle,
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSelected) TealPrimary else SurfaceBorder
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 9.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        when (mode) {
+                                            ThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                            ThemeMode.LIGHT -> Icons.Default.LightMode
+                                            ThemeMode.DARK -> Icons.Default.DarkMode
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isSelected) TealPrimary else TextMuted,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = mode.displayName,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) TealPrimary else TextDark
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = SurfaceBorder)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Mode Buta Warna (Aksesibilitas Medis)",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = TextDark
+                    )
+                    Text(
+                        text = "Menyesuaikan palet warna status kepatuhan obat dan menambahkan indikator bentuk visual agar mudah dibedakan tanpa mengandalkan warna semata.",
+                        fontSize = 11.5.sp,
+                        color = TextMuted,
+                        lineHeight = 16.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    ColorBlindMode.values().forEach { mode ->
+                        val isSelected = colorBlindMode == mode
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { repository.setColorBlindMode(mode) },
+                            color = if (isSelected) TealContainer else SurfaceSubtle,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) TealPrimary else SurfaceBorder
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = mode.displayName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.5.sp,
+                                        color = if (isSelected) TealPrimary else TextDark
+                                    )
+                                    Text(
+                                        text = mode.description,
+                                        fontSize = 11.sp,
+                                        color = TextMuted
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = TealPrimary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Live Status Badges Preview
+                    Surface(
+                        color = SurfaceSubtle,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Pratinjau Indikator Status Obat:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextMuted
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    DoseStatus.TERVERIFIKASI_LANGSUNG,
+                                    DoseStatus.MENUNGGU_LAPORAN,
+                                    DoseStatus.TERLEWAT
+                                ).forEach { s ->
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        DoseStatusBadge(status = s)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

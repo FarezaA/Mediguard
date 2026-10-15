@@ -1,9 +1,12 @@
 package com.mediguard.app
 
+import com.mediguard.app.data.model.ColorBlindMode
 import com.mediguard.app.data.model.DoseStatus
 import com.mediguard.app.data.model.MembershipStatus
+import com.mediguard.app.data.model.ThemeMode
 import com.mediguard.app.data.model.UserRole
 import com.mediguard.app.data.repository.MediGuardRepository
+import com.mediguard.app.ui.theme.resolveMediGuardColors
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -166,5 +169,38 @@ class MediGuardRepositoryTest {
         val patientNotifs = repository.getNotificationsForCurrentUser()
         val reminderNotifs = patientNotifs.filter { it.relatedEntityId == lateDose.id }
         assertTrue(reminderNotifs.size >= 2)
+    }
+
+    @Test
+    fun testThemeAndColorBlindAccessibilityModes() {
+        // Default theme and color-blind settings
+        assertEquals(ThemeMode.SYSTEM, repository.themeMode.value)
+        assertEquals(ColorBlindMode.OFF, repository.colorBlindMode.value)
+
+        // Switching theme mode
+        repository.setThemeMode(ThemeMode.DARK)
+        assertEquals(ThemeMode.DARK, repository.themeMode.value)
+
+        repository.setThemeMode(ThemeMode.LIGHT)
+        assertEquals(ThemeMode.LIGHT, repository.themeMode.value)
+
+        // Switching color-blind accessibility modes
+        repository.setColorBlindMode(ColorBlindMode.PROTANOPIA_DEUTERANOPIA)
+        assertEquals(ColorBlindMode.PROTANOPIA_DEUTERANOPIA, repository.colorBlindMode.value)
+
+        // Verify Protanopia palette replaces green/red with blue/magenta
+        val protanopiaLight = resolveMediGuardColors(isDark = false, mode = ColorBlindMode.PROTANOPIA_DEUTERANOPIA)
+        val normalLight = resolveMediGuardColors(isDark = false, mode = ColorBlindMode.OFF)
+        assertNotEquals(normalLight.statusVerified, protanopiaLight.statusVerified)
+        assertNotEquals(normalLight.statusMissed, protanopiaLight.statusMissed)
+
+        // Verify Tritanopia replaces pending yellow with violet
+        val tritanopiaLight = resolveMediGuardColors(isDark = false, mode = ColorBlindMode.TRITANOPIA)
+        assertNotEquals(normalLight.statusPending, tritanopiaLight.statusPending)
+
+        // Verify High Contrast dark palette
+        val highContrastDark = resolveMediGuardColors(isDark = true, mode = ColorBlindMode.HIGH_CONTRAST)
+        assertTrue(highContrastDark.isDark)
+        assertEquals(ColorBlindMode.HIGH_CONTRAST, highContrastDark.colorBlindMode)
     }
 }
