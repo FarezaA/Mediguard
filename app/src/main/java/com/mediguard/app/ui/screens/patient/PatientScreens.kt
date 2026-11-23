@@ -68,6 +68,20 @@ fun PatientDashboardScreen(
     var photoUriInput by remember { mutableStateOf<String?>(null) }
     var previewPhotoDose by remember { mutableStateOf<DoseEvent?>(null) }
 
+    val pendingDoseId by repository.pendingDoseActionId.collectAsState()
+    LaunchedEffect(pendingDoseId, doseEvents) {
+        val pId = pendingDoseId
+        if (!pId.isNullOrBlank()) {
+            val target = doseEvents.find { it.id == pId }
+            if (target != null) {
+                selectedDoseForAction = target
+                actionType = "TAKE"
+                takenTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                repository.clearPendingDoseActionId()
+            }
+        }
+    }
+
     // Real Camera & Upload States
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var capturedBytes by remember { mutableStateOf<ByteArray?>(null) }
