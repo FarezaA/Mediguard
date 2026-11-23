@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,7 +29,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1178,31 +1181,48 @@ fun DoseEventCard(
                     Button(
                         onClick = onTakeClick,
                         modifier = Modifier
-                            .weight(1.3f)
-                            .height(44.dp),
+                            .weight(1.35f)
+                            .height(42.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Sudah Minum", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Sudah Minum",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
                     }
 
                     OutlinedButton(
                         onClick = onMissClick,
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp),
+                            .height(42.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.2.dp, Color(0xFFFCA5A5)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusMissed)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusMissed),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
                     ) {
-                        Text("Terlewat", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "Terlewat",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
+                        )
                     }
 
                     FilledTonalIconButton(
                         onClick = onSnoozeClick,
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(42.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Snooze, contentDescription = "Tunda", tint = TextDark, modifier = Modifier.size(18.dp))
@@ -1329,88 +1349,156 @@ fun MedicationListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // ── Clean Header & Category Menu Bar ──
+            Surface(
+                color = SurfaceCard,
+                shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
+                border = BorderStroke(1.dp, SurfaceBorder),
+                shadowElevation = 1.5.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 16.dp)
+                ) {
                     Text(
                         text = "Daftar Obat Pasien",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextDark
                     )
+                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = "Kelola obat resep & jadwal konsumsi rutin Anda",
                         fontSize = 12.sp,
-                        color = TextMuted
+                        color = TextMuted,
+                        lineHeight = 16.sp
                     )
-                }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(
-                        selected = !showArchived,
-                        onClick = { showArchived = false },
-                        label = { Text("Aktif (${medications.count { !it.isArchived }})", fontSize = 12.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = TealContainer,
-                            selectedLabelColor = TealPrimary
-                        )
-                    )
-                    FilterChip(
-                        selected = showArchived,
-                        onClick = { showArchived = true },
-                        label = { Text("Arsip", fontSize = 12.sp) }
-                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Tab-style Filter Bar ("Obat Aktif (2)" & "Arsip Obat (0)")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        val activeCount = medications.count { !it.isArchived }
+                        val archivedCount = medications.count { it.isArchived }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showArchived = false },
+                            color = if (!showArchived) TealContainer else SurfaceSubtle,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, if (!showArchived) TealPrimary else SurfaceBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 9.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Medication,
+                                    contentDescription = null,
+                                    tint = if (!showArchived) TealPrimary else TextMuted,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Obat Aktif ($activeCount)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = if (!showArchived) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (!showArchived) TealPrimary else TextDark
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showArchived = true },
+                            color = if (showArchived) TealContainer else SurfaceSubtle,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, if (showArchived) TealPrimary else SurfaceBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 9.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Archive,
+                                    contentDescription = null,
+                                    tint = if (showArchived) TealPrimary else TextMuted,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Arsip ($archivedCount)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = if (showArchived) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (showArchived) TealPrimary else TextDark
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
             if (activeMeds.isEmpty()) {
-                Card(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceCard),
-                    border = BorderStroke(1.dp, SurfaceBorder)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    Column(
-                        modifier = Modifier.padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 20.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                        border = BorderStroke(1.dp, SurfaceBorder)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(CircleShape)
-                                .background(TealContainer),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.Medication, contentDescription = null, tint = TealPrimary)
+                            Box(
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(CircleShape)
+                                    .background(TealContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Medication, contentDescription = null, tint = TealPrimary)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = if (showArchived) "Tidak ada obat yang diarsipkan" else "Belum ada obat aktif",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = TextDark
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Tambahkan obat baru untuk mulai membuat jadwal konsumsi.",
+                                fontSize = 12.sp,
+                                color = TextMuted,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = if (showArchived) "Tidak ada obat yang diarsipkan" else "Belum ada obat aktif",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = TextDark
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Tambahkan obat baru untuk mulai membuat jadwal konsumsi.",
-                            fontSize = 12.sp,
-                            color = TextMuted,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
                     }
                 }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 88.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(activeMeds) { med ->
@@ -1430,7 +1518,7 @@ fun MedicationListScreen(
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     Row(
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.weight(1f).padding(end = 8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(
@@ -1443,8 +1531,15 @@ fun MedicationListScreen(
                                             Icon(Icons.Default.Medication, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(22.dp))
                                         }
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(text = med.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
+                                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                                            Text(
+                                                text = med.name,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = TextDark,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
                                             Surface(
                                                 color = SurfaceSubtle,
                                                 shape = RoundedCornerShape(4.dp)
@@ -1454,7 +1549,9 @@ fun MedicationListScreen(
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Medium,
                                                     color = TextMuted,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                         }
@@ -1473,7 +1570,7 @@ fun MedicationListScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
 
                                 Surface(
-                                    color = Color(0xFFF8FAFC),
+                                    color = SurfaceSubtle,
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -1746,10 +1843,25 @@ fun PatientRoomsScreen(
     val members by repository.roomMembers.collectAsState()
     val currentUser by repository.currentUser.collectAsState()
 
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+
     var showCreateRoomDialog by remember { mutableStateOf(false) }
+    var showEditRoomDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
 
-    val myRoom = rooms.firstOrNull { it.ownerUserId == currentUser?.id } ?: rooms.firstOrNull()
+    val myRooms = rooms.filter { it.ownerUserId == currentUser?.id }
+    val effectiveRooms = if (myRooms.isNotEmpty()) myRooms else rooms
+
+    var selectedRoomId by remember { mutableStateOf<String?>(null) }
+    val activeRoom = effectiveRooms.find { it.id == selectedRoomId } ?: effectiveRooms.firstOrNull()
+
+    LaunchedEffect(effectiveRooms) {
+        if (selectedRoomId == null || effectiveRooms.none { it.id == selectedRoomId }) {
+            selectedRoomId = effectiveRooms.firstOrNull()?.id
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1762,17 +1874,19 @@ fun PatientRoomsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                 Text(
                     text = "Medication Room",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextDark
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Ruang privat pengawasan kepatuhan obat Anda",
+                    text = "Kelola ruang privat & izin pengawasan obat Anda",
                     fontSize = 12.sp,
-                    color = TextMuted
+                    color = TextMuted,
+                    lineHeight = 16.sp
                 )
             }
 
@@ -1780,15 +1894,17 @@ fun PatientRoomsScreen(
                 onClick = { showCreateRoomDialog = true },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("+ Buat Ruang", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(15.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Buat Ruang", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        if (myRoom == null) {
+        if (activeRoom == null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -1799,13 +1915,23 @@ fun PatientRoomsScreen(
                     modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(TealContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text("Anda belum memiliki Medication Room.", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        "Buat ruang pemantauan agar keluarga dapat mendampingi jadwal minum obat Anda.",
+                        "Buat ruang pemantauan agar keluarga dapat mendampingi jadwal minum obat Anda seperti Google Classroom.",
                         fontSize = 12.sp,
                         color = TextMuted,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     Button(
@@ -1818,17 +1944,104 @@ fun PatientRoomsScreen(
                 }
             }
         } else {
+            // Horizontal Room Selector if patient has more than 1 room
+            if (effectiveRooms.size > 1) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    items(effectiveRooms) { roomItem ->
+                        val isSelected = roomItem.id == activeRoom.id
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedRoomId = roomItem.id },
+                            label = {
+                                Text(
+                                    text = "${roomItem.name} (${roomItem.inviteCode})",
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.MeetingRoom,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp),
+                                    tint = if (isSelected) TealPrimary else TextMuted
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = TealContainer,
+                                selectedLabelColor = TealPrimary,
+                                containerColor = SurfaceCard,
+                                labelColor = TextDark
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = if (isSelected) TealPrimary else SurfaceBorder,
+                                selectedBorderColor = TealPrimary,
+                                borderWidth = 1.dp,
+                                selectedBorderWidth = 1.5.dp
+                            )
+                        )
+                    }
+                }
+            }
+
+            val roomMembers = members.filter { it.roomId == activeRoom.id }
+            val pendingRequests = roomMembers.filter { it.status == MembershipStatus.PENDING }
+            val approvedCaregivers = roomMembers.filter { it.status == MembershipStatus.APPROVED && it.role == UserRole.PEMANTAU }
+
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = SurfaceCard,
                 contentColor = TealPrimary
             ) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ruang & Kode", fontWeight = FontWeight.SemiBold) })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Anggota", fontWeight = FontWeight.SemiBold) })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Izin Privasi", fontWeight = FontWeight.SemiBold) })
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Ruang & Kode", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp) }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Anggota", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
+                            if (pendingRequests.isNotEmpty()) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    color = Color(0xFFEF4444),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = "${pendingRequests.size}",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text("Izin Privasi", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp) }
+                )
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    text = { Text("Semua Ruang (${effectiveRooms.size})", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp) }
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             when (selectedTab) {
                 0 -> {
@@ -1839,24 +2052,63 @@ fun PatientRoomsScreen(
                         border = BorderStroke(1.dp, SurfaceBorder)
                     ) {
                         Column(modifier = Modifier.padding(18.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(TealContainer),
-                                    contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(22.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(42.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(TealContainer),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(22.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Text(
+                                            text = activeRoom.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 17.sp,
+                                            color = TextDark,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = if (activeRoom.description.isNotBlank()) activeRoom.description else "Belum ada deskripsi",
+                                            fontSize = 12.sp,
+                                            color = TextMuted,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(text = myRoom.name, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark)
-                                    Text(text = myRoom.description, fontSize = 12.sp, color = TextMuted)
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    IconButton(
+                                        onClick = { showEditRoomDialog = true },
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Ubah Ruang", tint = TealPrimary, modifier = Modifier.size(18.dp))
+                                    }
+                                    if (effectiveRooms.size > 1) {
+                                        IconButton(
+                                            onClick = { showDeleteConfirmDialog = true },
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Icon(Icons.Default.DeleteOutline, contentDescription = "Hapus Ruang", tint = StatusMissedText, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
                             HorizontalDivider(color = SurfaceBorder)
                             Spacer(modifier = Modifier.height(14.dp))
 
@@ -1874,29 +2126,87 @@ fun PatientRoomsScreen(
                                 border = BorderStroke(1.5.dp, Color(0xFF99F6E4)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = myRoom.inviteCode,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TealPrimary,
-                                            letterSpacing = 2.sp
-                                        )
-                                        Text(text = "Aktif & Dapat Digunakan", fontSize = 11.sp, color = TextMuted)
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = activeRoom.inviteCode,
+                                                fontSize = 26.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TealPrimary,
+                                                letterSpacing = 2.sp
+                                            )
+                                            Text(
+                                                text = "ID: ${activeRoom.id} • Aktif",
+                                                fontSize = 11.sp,
+                                                color = TextMuted
+                                            )
+                                        }
+
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                onClick = {
+                                                    clipboardManager.setText(AnnotatedString(activeRoom.inviteCode))
+                                                    Toast.makeText(context, "Kode '${activeRoom.inviteCode}' disalin ke clipboard!", Toast.LENGTH_SHORT).show()
+                                                },
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                            ) {
+                                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Salin", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    repository.rotateInviteCode(activeRoom.id)
+                                                    Toast.makeText(context, "Kode ruang diperbarui!", Toast.LENGTH_SHORT).show()
+                                                },
+                                                shape = RoundedCornerShape(10.dp),
+                                                border = BorderStroke(1.dp, TealPrimary),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                            ) {
+                                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = TealPrimary)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Acak", fontSize = 12.sp, color = TealPrimary)
+                                            }
+                                        }
                                     }
 
-                                    OutlinedButton(
-                                        onClick = { repository.rotateInviteCode(myRoom.id) },
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.dp, TealPrimary)
-                                    ) {
-                                        Text("Acak Ulang", fontSize = 12.sp, color = TealPrimary)
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = "Bagikan kode atau ID ini kepada pemantau/keluarga seperti Google Classroom agar mereka dapat bergabung ke ruang Anda.",
+                                        fontSize = 11.sp,
+                                        color = TextMuted,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedCard(
+                                onClick = { showEditRoomDialog = true },
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, SurfaceBorder),
+                                colors = CardDefaults.outlinedCardColors(containerColor = SurfaceSubtle),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Tune, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Penyesuaian & Pengaturan Ruang", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextDark)
+                                        Text("Klik untuk mengubah nama dan deskripsi ruang ini.", fontSize = 11.sp, color = TextMuted)
                                     }
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
                                 }
                             }
 
@@ -1924,10 +2234,6 @@ fun PatientRoomsScreen(
                     }
                 }
                 1 -> {
-                    val roomMembers = members.filter { it.roomId == myRoom.id }
-                    val pendingRequests = roomMembers.filter { it.status == MembershipStatus.PENDING }
-                    val approvedCaregivers = roomMembers.filter { it.status == MembershipStatus.APPROVED && it.role == UserRole.PEMANTAU }
-
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
@@ -1984,7 +2290,10 @@ fun PatientRoomsScreen(
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             Button(
-                                                onClick = { repository.approveMember(req.id) },
+                                                onClick = {
+                                                    repository.approveMember(req.id)
+                                                    Toast.makeText(context, "Permintaan ${req.userName} disetujui!", Toast.LENGTH_SHORT).show()
+                                                },
                                                 shape = RoundedCornerShape(8.dp),
                                                 colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
@@ -1992,7 +2301,10 @@ fun PatientRoomsScreen(
                                                 Text("Setujui", fontSize = 12.sp)
                                             }
                                             OutlinedButton(
-                                                onClick = { repository.rejectMember(req.id) },
+                                                onClick = {
+                                                    repository.rejectMember(req.id)
+                                                    Toast.makeText(context, "Permintaan ${req.userName} ditolak.", Toast.LENGTH_SHORT).show()
+                                                },
                                                 shape = RoundedCornerShape(8.dp),
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                                             ) {
@@ -2022,7 +2334,7 @@ fun PatientRoomsScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "Belum ada pemantau aktif yang disetujui.",
+                                        text = "Belum ada pemantau aktif yang disetujui untuk ruang ini.",
                                         modifier = Modifier.padding(16.dp),
                                         fontSize = 12.sp,
                                         color = TextMuted
@@ -2062,7 +2374,10 @@ fun PatientRoomsScreen(
                                             }
                                         }
                                         OutlinedButton(
-                                            onClick = { repository.revokeMemberAccess(caregiver.id) },
+                                            onClick = {
+                                                repository.revokeMemberAccess(caregiver.id)
+                                                Toast.makeText(context, "Akses pemantau dicabut.", Toast.LENGTH_SHORT).show()
+                                            },
                                             shape = RoundedCornerShape(8.dp),
                                             border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
                                             colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusMissed),
@@ -2077,10 +2392,6 @@ fun PatientRoomsScreen(
                     }
                 }
                 2 -> {
-                    val approvedCaregivers = members.filter {
-                        it.roomId == myRoom.id && it.status == MembershipStatus.APPROVED && it.role == UserRole.PEMANTAU
-                    }
-
                     if (approvedCaregivers.isEmpty()) {
                         Text(
                             text = "Belum ada pemantau aktif untuk dikonfigurasi hak aksesnya.",
@@ -2141,12 +2452,152 @@ fun PatientRoomsScreen(
                                                     canViewActivities = canActivities,
                                                     canViewStats = canStats
                                                 )
+                                                Toast.makeText(context, "Izin berhasil diperbarui!", Toast.LENGTH_SHORT).show()
                                             },
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
                                         ) {
                                             Text("Simpan Perubahan Izin", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                3 -> {
+                    // Daftar Semua Ruang Pasien
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(effectiveRooms) { itemRoom ->
+                            val isActive = itemRoom.id == activeRoom.id
+                            val itemMembersCount = members.count { it.roomId == itemRoom.id && it.status == MembershipStatus.APPROVED && it.role == UserRole.PEMANTAU }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                                border = BorderStroke(if (isActive) 1.5.dp else 1.dp, if (isActive) TealPrimary else SurfaceBorder)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(if (isActive) TealPrimary else TealContainer),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.MeetingRoom,
+                                                    contentDescription = null,
+                                                    tint = if (isActive) Color.White else TealPrimary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                                Text(
+                                                    text = itemRoom.name,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 15.sp,
+                                                    color = TextDark,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "Kode: ${itemRoom.inviteCode} • $itemMembersCount Pemantau",
+                                                    fontSize = 11.sp,
+                                                    color = TextMuted
+                                                )
+                                            }
+                                        }
+
+                                        if (isActive) {
+                                            Surface(
+                                                color = StatusVerifiedBg,
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Dipilih",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = StatusVerifiedText,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    if (itemRoom.description.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = itemRoom.description,
+                                            fontSize = 12.sp,
+                                            color = TextMuted,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (!isActive) {
+                                            Button(
+                                                onClick = {
+                                                    selectedRoomId = itemRoom.id
+                                                    selectedTab = 0
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                                                contentPadding = PaddingValues(vertical = 6.dp)
+                                            ) {
+                                                Text("Buka Ruang", fontSize = 12.sp)
+                                            }
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                selectedRoomId = itemRoom.id
+                                                showEditRoomDialog = true
+                                            },
+                                            modifier = Modifier.weight(if (isActive) 1f else 0.8f),
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = BorderStroke(1.dp, TealPrimary),
+                                            contentPadding = PaddingValues(vertical = 6.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = TealPrimary)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Penyesuaian", fontSize = 12.sp, color = TealPrimary)
+                                        }
+
+                                        if (effectiveRooms.size > 1) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    selectedRoomId = itemRoom.id
+                                                    showDeleteConfirmDialog = true
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                            ) {
+                                                Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(14.dp), tint = StatusMissedText)
+                                            }
                                         }
                                     }
                                 }
@@ -2170,10 +2621,17 @@ fun PatientRoomsScreen(
             title = { Text("Buat Medication Room Baru", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark) },
             text = {
                 Column {
+                    Text(
+                        text = "Setiap room memiliki kode undangan unik layaknya Google Classroom yang bisa dibagikan ke pemantau/keluarga.",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = roomName,
                         onValueChange = { roomName = it },
-                        label = { Text("Nama Ruang (misal: Ruang Obat Hendra)") },
+                        label = { Text("Nama Ruang (misal: Ruang Utama Hendra)") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary, unfocusedBorderColor = SurfaceBorder)
@@ -2182,7 +2640,7 @@ fun PatientRoomsScreen(
                     OutlinedTextField(
                         value = roomDesc,
                         onValueChange = { roomDesc = it },
-                        label = { Text("Deskripsi (opsional)") },
+                        label = { Text("Deskripsi Ruang (opsional)") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary, unfocusedBorderColor = SurfaceBorder)
@@ -2193,7 +2651,13 @@ fun PatientRoomsScreen(
                 Button(
                     onClick = {
                         if (roomName.isNotBlank()) {
-                            repository.createRoom(roomName, roomDesc)
+                            val res = repository.createRoom(roomName, roomDesc)
+                            if (res.isSuccess) {
+                                val created = res.getOrThrow()
+                                selectedRoomId = created.id
+                                selectedTab = 0
+                                Toast.makeText(context, "Ruang '${created.name}' berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                            }
                             showCreateRoomDialog = false
                         }
                     },
@@ -2205,6 +2669,106 @@ fun PatientRoomsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showCreateRoomDialog = false }) {
+                    Text("Batal", fontSize = 13.sp, color = TextMuted)
+                }
+            }
+        )
+    }
+
+    // Edit Room Dialog (Penyesuaian)
+    if (showEditRoomDialog && activeRoom != null) {
+        var editName by remember(activeRoom) { mutableStateOf(activeRoom.name) }
+        var editDesc by remember(activeRoom) { mutableStateOf(activeRoom.description) }
+
+        AlertDialog(
+            onDismissRequest = { showEditRoomDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = SurfaceCard,
+            title = { Text("Penyesuaian Medication Room", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark) },
+            text = {
+                Column {
+                    Text(
+                        text = "Lakukan penyesuaian nama atau deskripsi pada ruang '${activeRoom.name}':",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Nama Ruang") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary, unfocusedBorderColor = SurfaceBorder)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editDesc,
+                        onValueChange = { editDesc = it },
+                        label = { Text("Deskripsi Ruang (opsional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = TealPrimary, unfocusedBorderColor = SurfaceBorder)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editName.isNotBlank()) {
+                            val res = repository.updateRoom(activeRoom.id, editName, editDesc)
+                            if (res.isSuccess) {
+                                Toast.makeText(context, "Perubahan ruang berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                            }
+                            showEditRoomDialog = false
+                        }
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text("Simpan Perubahan", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditRoomDialog = false }) {
+                    Text("Batal", fontSize = 13.sp, color = TextMuted)
+                }
+            }
+        )
+    }
+
+    // Delete Room Confirmation Dialog
+    if (showDeleteConfirmDialog && activeRoom != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = SurfaceCard,
+            title = { Text("Hapus Medication Room?", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = StatusMissedText) },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin menghapus '${activeRoom.name}'? Seluruh data izin dan akses pemantau di ruang ini akan dihapus.",
+                    fontSize = 13.sp,
+                    color = TextDark,
+                    lineHeight = 18.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        repository.deleteRoom(activeRoom.id)
+                        selectedRoomId = null
+                        Toast.makeText(context, "Ruang berhasil dihapus.", Toast.LENGTH_SHORT).show()
+                        showDeleteConfirmDialog = false
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusMissedText)
+                ) {
+                    Text("Ya, Hapus", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text("Batal", fontSize = 13.sp, color = TextMuted)
                 }
             }

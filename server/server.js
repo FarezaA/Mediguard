@@ -547,7 +547,13 @@ const server = http.createServer((req, res) => {
 
                 case 'requestJoinRoom': {
                     const { inviteCode } = payload;
-                    const room = state.rooms.find(r => r.inviteCode.toUpperCase() === (inviteCode || '').toUpperCase().trim());
+                    const cleanCode = (inviteCode || '').toUpperCase().trim();
+                    const cleanNoPrefix = cleanCode.replace(/^MG-?/, '');
+                    const room = state.rooms.find(r => 
+                        r.inviteCode.toUpperCase() === cleanCode || 
+                        r.id.toUpperCase() === cleanCode ||
+                        r.inviteCode.replace(/^MG-?/, '').toUpperCase() === cleanNoPrefix
+                    );
                     if (room) {
                         const existing = state.roomMembers.find(m => m.roomId === room.id && m.userId === currentUser.id);
                         if (!existing) {
@@ -616,29 +622,68 @@ const server = http.createServer((req, res) => {
                 }
 
                 case 'rotateInviteCode': {
-                    const { roomId } = payload;
+                    const { roomId, newInviteCode } = payload;
                     const room = state.rooms.find(r => r.id === roomId);
                     if (room) {
                         const randomNum = Math.floor(1000 + Math.random() * 9000);
-                        room.inviteCode = `MG-${randomNum}`;
+                        room.inviteCode = newInviteCode || `MG-${randomNum}`;
                         saveState();
                     }
                     break;
                 }
 
                 case 'createRoom': {
-                    const { name, description } = payload;
+                    const { id, name, description, inviteCode } = payload;
                     const randomNum = Math.floor(1000 + Math.random() * 9000);
                     const newRoom = {
-                        id: `room_${Date.now()}`,
+                        id: id || `room_${Date.now()}`,
                         ownerUserId: currentUser.id,
                         ownerName: currentUser.name,
                         name: name,
                         description: description || '',
-                        inviteCode: `MG-${randomNum}`,
+                        inviteCode: inviteCode || `MG-${randomNum}`,
                         createdAt: dateStr
                     };
                     state.rooms.push(newRoom);
+
+                    // Add owner member if not present
+                    const existingOwner = state.roomMembers.find(m => m.roomId === newRoom.id && m.userId === currentUser.id);
+                    if (!existingOwner) {
+                        state.roomMembers.push({
+                            id: `member_${Date.now()}`,
+                            roomId: newRoom.id,
+                            userId: currentUser.id,
+                            userName: currentUser.name,
+                            userEmail: currentUser.email,
+                            role: 'PASIEN',
+                            status: 'APPROVED',
+                            canViewSchedules: true,
+                            canViewActivities: true,
+                            canViewStats: true,
+                            requestedAt: dateStr,
+                            updatedAt: dateStr
+                        });
+                    }
+
+                    saveState();
+                    break;
+                }
+
+                case 'updateRoom': {
+                    const { roomId, name, description } = payload;
+                    const room = state.rooms.find(r => r.id === roomId);
+                    if (room) {
+                        if (name) room.name = name;
+                        if (description !== undefined) room.description = description;
+                        saveState();
+                    }
+                    break;
+                }
+
+                case 'deleteRoom': {
+                    const { roomId } = payload;
+                    state.rooms = state.rooms.filter(r => r.id !== roomId);
+                    state.roomMembers = state.roomMembers.filter(m => m.roomId !== roomId);
                     saveState();
                     break;
                 }

@@ -728,14 +728,79 @@ class MediGuardRepository {
 
         syncScope.launch {
             val payload = JSONObject().apply {
+                put("id", newRoom.id)
                 put("name", newRoom.name)
                 put("description", newRoom.description)
+                put("inviteCode", newRoom.inviteCode)
             }
             MediGuardApiClient.sendAction("createRoom", payload, current.id)
             triggerSync()
         }
 
         return Result.success(newRoom)
+    }
+
+    fun updateRoom(roomId: String, name: String, description: String): Result<MedicationRoom> {
+        val current = _currentUser.value ?: return Result.failure(IllegalStateException("Belum login"))
+        if (name.isBlank()) {
+            return Result.failure(IllegalArgumentException("Nama ruang tidak boleh kosong."))
+        }
+        val room = _rooms.value.find { it.id == roomId } ?: return Result.failure(IllegalArgumentException("Ruang tidak ditemukan"))
+        if (room.ownerUserId != current.id) {
+            return Result.failure(SecurityException("Hanya pemilik ruang yang dapat mengubah pengaturan ruang."))
+        }
+        val updatedRoom = room.copy(name = name.trim(), description = description.trim())
+        _rooms.value = _rooms.value.map { if (it.id == roomId) updatedRoom else it }
+
+        logAudit(
+            roomId = roomId,
+            actor = current,
+            action = "UPDATE_ROOM",
+            entityType = "MedicationRoom",
+            entityId = roomId,
+            details = "Memperbarui Medication Room '${updatedRoom.name}'"
+        )
+
+        syncScope.launch {
+            val payload = JSONObject().apply {
+                put("roomId", roomId)
+                put("name", updatedRoom.name)
+                put("description", updatedRoom.description)
+            }
+            MediGuardApiClient.sendAction("updateRoom", payload, current.id)
+            triggerSync()
+        }
+
+        return Result.success(updatedRoom)
+    }
+
+    fun deleteRoom(roomId: String): Result<Unit> {
+        val current = _currentUser.value ?: return Result.failure(IllegalStateException("Belum login"))
+        val room = _rooms.value.find { it.id == roomId } ?: return Result.failure(IllegalArgumentException("Ruang tidak ditemukan"))
+        if (room.ownerUserId != current.id) {
+            return Result.failure(SecurityException("Hanya pemilik ruang yang dapat menghapus ruang."))
+        }
+        _rooms.value = _rooms.value.filter { it.id != roomId }
+        _roomMembers.value = _roomMembers.value.filter { it.roomId != roomId }
+
+        logAudit(
+            roomId = roomId,
+            actor = current,
+            action = "DELETE_ROOM",
+            entityType = "MedicationRoom",
+            entityId = roomId,
+            details = "Menghapus Medication Room '${room.name}'"
+        )
+
+        syncScope.launch {
+            val payload = JSONObject().apply {
+                put("roomId", roomId)
+            }
+            MediGuardApiClient.sendAction("deleteRoom", payload, current.id)
+            triggerSync()
+        }
+
+        return Result.success(Unit)
     }
 
     fun rotateInviteCode(roomId: String): Result<String> {
@@ -760,6 +825,7 @@ class MediGuardRepository {
         syncScope.launch {
             val payload = JSONObject().apply {
                 put("roomId", roomId)
+                put("newInviteCode", newCode)
             }
             MediGuardApiClient.sendAction("rotateInviteCode", payload, current.id)
             triggerSync()
@@ -770,11 +836,18 @@ class MediGuardRepository {
 
     fun findRoomPreviewByCode(code: String): Result<MedicationRoom> {
         val cleanCode = code.trim().uppercase()
-        val room = _rooms.value.find { it.inviteCode.equals(cleanCode, ignoreCase = true) && it.status == RoomStatus.ACTIVE }
+        val cleanNoPrefix = cleanCode.removePrefix("MG-").removePrefix("MG")
+        val room = _rooms.value.find {
+            it.status == RoomStatus.ACTIVE && (
+                it.inviteCode.equals(cleanCode, ignoreCase = true) ||
+                it.id.equals(cleanCode, ignoreCase = true) ||
+                it.inviteCode.removePrefix("MG-").equals(cleanNoPrefix, ignoreCase = true)
+            )
+        }
         return if (room != null) {
             Result.success(room)
         } else {
-            Result.failure(IllegalArgumentException("Kode undangan tidak valid atau ruang sudah tidak aktif."))
+            Result.failure(IllegalArgumentException("Kode atau ID ruang tidak ditemukan. Periksa kembali kode dari pasien."))
         }
     }
 

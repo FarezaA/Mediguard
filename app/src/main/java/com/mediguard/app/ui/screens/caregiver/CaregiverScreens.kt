@@ -948,7 +948,8 @@ fun JoinRoomScreen(
     repository: MediGuardRepository,
     onBack: () -> Unit
 ) {
-    var inviteCode by remember { mutableStateOf("MG-8821") }
+    val currentUser by repository.currentUser.collectAsState()
+    var inviteCode by remember { mutableStateOf("") }
     var previewRoom by remember { mutableStateOf<MedicationRoom?>(null) }
     var infoMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -974,15 +975,58 @@ fun JoinRoomScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Google Classroom style user badge
+        Surface(
+            color = SurfaceSubtle,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(TealPrimary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = currentUser?.name?.take(1)?.uppercase() ?: "P",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Masuk sebagai: ${currentUser?.name ?: "Pemantau"}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextDark
+                    )
+                    Text(
+                        text = currentUser?.email ?: "",
+                        fontSize = 11.sp,
+                        color = TextMuted
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
         Text(
-            text = "Masukkan kode undangan yang dibagikan oleh pasien untuk mengajukan akses pemantauan keluarga.",
-            fontSize = 13.sp,
+            text = "Masukkan kode undangan atau ID yang dibagikan oleh pasien untuk mengajukan akses pemantauan keluarga layaknya Google Classroom.",
+            fontSize = 12.sp,
             color = TextMuted,
-            lineHeight = 18.sp,
+            lineHeight = 17.sp,
             modifier = Modifier.padding(horizontal = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         if (errorMessage != null) {
             Card(
@@ -1026,8 +1070,16 @@ fun JoinRoomScreen(
                 inviteCode = it
                 errorMessage = null
             },
-            label = { Text("Kode Undangan Ruang (misal: MG-8821)") },
-            leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null, tint = TextMuted) },
+            label = { Text("Kode / ID Ruang (misal: MG-8821 atau 8821)") },
+            placeholder = { Text("Masukkan kode atau ID ruang") },
+            leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null, tint = TealPrimary) },
+            trailingIcon = {
+                if (inviteCode.isNotEmpty()) {
+                    IconButton(onClick = { inviteCode = ""; previewRoom = null; errorMessage = null }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = TextMuted)
+                    }
+                }
+            },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -1047,6 +1099,7 @@ fun JoinRoomScreen(
                     previewRoom = null
                 }
             },
+            enabled = inviteCode.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -1119,13 +1172,17 @@ fun JoinRoomScreen(
 
 @Composable
 fun CaregiverRoomsScreen(
-    repository: MediGuardRepository
+    repository: MediGuardRepository,
+    onNavigateToJoin: () -> Unit = {}
 ) {
     val currentUser by repository.currentUser.collectAsState()
     val rooms by repository.rooms.collectAsState()
     val members by repository.roomMembers.collectAsState()
     val medications by repository.medications.collectAsState()
     val schedules by repository.schedules.collectAsState()
+
+    var showJoinDialog by remember { mutableStateOf(false) }
+    var memberToLeave by remember { mutableStateOf<RoomMember?>(null) }
 
     val myMemberships = members.filter { it.userId == currentUser?.id }
 
@@ -1135,17 +1192,38 @@ fun CaregiverRoomsScreen(
             .background(AppBackground)
             .padding(16.dp)
     ) {
-        Text(
-            text = "Ruang Pasien yang Dipantau",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark
-        )
-        Text(
-            text = "Daftar ruang pengobatan pasien yang memberi Anda izin pendampingan",
-            fontSize = 12.sp,
-            color = TextMuted
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    text = "Ruang Pasien yang Dipantau",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Daftar ruang pengobatan pasien yang Anda dampingi",
+                    fontSize = 12.sp,
+                    color = TextMuted,
+                    lineHeight = 16.sp
+                )
+            }
+
+            Button(
+                onClick = { showJoinDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Gabung Ruang", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            }
+        }
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -1157,15 +1235,44 @@ fun CaregiverRoomsScreen(
                 border = BorderStroke(1.dp, SurfaceBorder)
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Anda belum tergabung dalam ruang pasien manapun.", fontSize = 13.sp, color = TextMuted)
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(TealContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(28.dp))
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("Belum Ada Ruang yang Dipantau", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        "Gabung ke Medication Room menggunakan kode undangan atau ID yang dibagikan oleh pasien (seperti Google Classroom) untuk mulai mendampingi minum obat.",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 17.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { showJoinDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Gabung Ruang Sekarang", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(myMemberships) { membership ->
@@ -1196,11 +1303,26 @@ fun CaregiverRoomsScreen(
                                 )
                                 MembershipStatusBadge(status = membership.status)
                             }
-                            Text(
-                                text = "Pasien Pemilik: ${room?.ownerName ?: "-"}",
-                                fontSize = 12.sp,
-                                color = TextMuted
-                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Pasien: ${room?.ownerName ?: "-"}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TextDark
+                                )
+                                if (room != null) {
+                                    Text(
+                                        text = "Kode: ${room.inviteCode}",
+                                        fontSize = 11.sp,
+                                        color = TextMuted
+                                    )
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(10.dp))
                             HorizontalDivider(color = SurfaceBorder)
@@ -1259,11 +1381,25 @@ fun CaregiverRoomsScreen(
                                     }
                                 }
                                 MembershipStatus.PENDING -> {
-                                    Text(
-                                        text = "Permintaan bergabung sedang menunggu persetujuan pasien.",
-                                        fontSize = 12.sp,
-                                        color = StatusPendingText
-                                    )
+                                    Surface(
+                                        color = Color(0xFFFEF3C7),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Permintaan bergabung sedang menunggu persetujuan pasien. Jadwal obat akan muncul otomatis setelah disetujui.",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF92400E),
+                                                lineHeight = 15.sp
+                                            )
+                                        }
+                                    }
                                 }
                                 MembershipStatus.REVOKED -> {
                                     Text(
@@ -1280,11 +1416,250 @@ fun CaregiverRoomsScreen(
                                     )
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(
+                                    onClick = { memberToLeave = membership },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = StatusMissedText)
+                                ) {
+                                    Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Keluar dari Ruang", fontSize = 11.5.sp)
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Google Classroom Style Join Room Dialog
+    if (showJoinDialog) {
+        var inputCode by remember { mutableStateOf("") }
+        var previewRoom by remember { mutableStateOf<MedicationRoom?>(null) }
+        var joinError by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(inputCode) {
+            val trimmed = inputCode.trim()
+            if (trimmed.length >= 3) {
+                val previewRes = repository.findRoomPreviewByCode(trimmed)
+                if (previewRes.isSuccess) {
+                    previewRoom = previewRes.getOrNull()
+                    joinError = null
+                } else {
+                    previewRoom = null
+                }
+            } else {
+                previewRoom = null
+                joinError = null
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showJoinDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = SurfaceCard,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(TealContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text("Gabung Medication Room", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
+                        Text("Gabung menggunakan Kode atau ID Ruang", fontSize = 11.sp, color = TextMuted)
+                    }
+                }
+            },
+            text = {
+                Column {
+                    // Google Classroom style user badge
+                    Surface(
+                        color = SurfaceSubtle,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(TealPrimary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = currentUser?.name?.take(1)?.uppercase() ?: "P",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Login sebagai: ${currentUser?.name ?: "Pemantau"}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextDark
+                                )
+                                Text(
+                                    text = currentUser?.email ?: "",
+                                    fontSize = 11.sp,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "Kode atau ID Ruang:",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = TextDark
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Mintalah kode undangan kepada pasien (contoh: MG-8821 atau ID ruang), lalu masukkan di sini.",
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        lineHeight = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = inputCode,
+                        onValueChange = {
+                            inputCode = it
+                            joinError = null
+                        },
+                        placeholder = { Text("Contoh: MG-8821 atau 8821") },
+                        leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null, tint = TealPrimary) },
+                        trailingIcon = {
+                            if (inputCode.isNotEmpty()) {
+                                IconButton(onClick = { inputCode = ""; previewRoom = null; joinError = null }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = TextMuted)
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = TealPrimary,
+                            unfocusedBorderColor = SurfaceBorder
+                        )
+                    )
+
+                    if (joinError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = joinError ?: "",
+                            fontSize = 12.sp,
+                            color = StatusMissedText
+                        )
+                    }
+
+                    if (previewRoom != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            color = Color(0xFFE6F4F1),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFF99F6E4)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Ruang Pasien Ditemukan!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TealPrimary)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(previewRoom!!.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text("Pasien: ${previewRoom!!.ownerName}", fontSize = 12.sp, color = TextMuted)
+                                if (previewRoom!!.description.isNotBlank()) {
+                                    Text(previewRoom!!.description, fontSize = 11.sp, color = TextMuted)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val trimmed = inputCode.trim()
+                        if (trimmed.isNotBlank()) {
+                            val res = repository.requestJoinRoom(trimmed)
+                            if (res.isSuccess) {
+                                showJoinDialog = false
+                            } else {
+                                joinError = res.exceptionOrNull()?.message ?: "Gagal bergabung ke ruang."
+                            }
+                        }
+                    },
+                    enabled = inputCode.isNotBlank(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text("Gabung Ruang", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJoinDialog = false }) {
+                    Text("Batal", fontSize = 13.sp, color = TextMuted)
+                }
+            }
+        )
+    }
+
+    // Leave Room Confirmation Dialog
+    if (memberToLeave != null) {
+        val membership = memberToLeave!!
+        val room = rooms.find { it.id == membership.roomId }
+        AlertDialog(
+            onDismissRequest = { memberToLeave = null },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = SurfaceCard,
+            title = { Text("Keluar dari Medication Room?", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = StatusMissedText) },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin berhenti memantau ruang '${room?.name ?: "Ruang Pasien"}'?",
+                    fontSize = 13.sp,
+                    color = TextDark
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        repository.revokeMemberAccess(membership.id)
+                        memberToLeave = null
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusMissedText)
+                ) {
+                    Text("Ya, Keluar", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { memberToLeave = null }) {
+                    Text("Batal", fontSize = 13.sp, color = TextMuted)
+                }
+            }
+        )
     }
 }
 

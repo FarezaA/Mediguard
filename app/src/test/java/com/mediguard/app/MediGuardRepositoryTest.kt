@@ -56,6 +56,42 @@ class MediGuardRepositoryTest {
         assertTrue(rotateResult.isSuccess)
         val newCode = rotateResult.getOrThrow()
         assertNotEquals(room.inviteCode, newCode)
+
+        // Update room name and description
+        val updateResult = repository.updateRoom(room.id, "Ruang Kamar Pasien", "Deskripsi baru kamar")
+        assertTrue(updateResult.isSuccess)
+        val updatedRoom = updateResult.getOrThrow()
+        assertEquals("Ruang Kamar Pasien", updatedRoom.name)
+        assertEquals("Deskripsi baru kamar", updatedRoom.description)
+
+        // Delete room
+        val deleteResult = repository.deleteRoom(room.id)
+        assertTrue(deleteResult.isSuccess)
+        assertNull(repository.rooms.value.find { it.id == room.id })
+    }
+
+    @Test
+    fun testFlexibleRoomCodeOrIdLookup() {
+        repository.switchUser("user_patient_1")
+        val roomResult = repository.createRoom("Ruang Mandiri", "Deskripsi")
+        assertTrue(roomResult.isSuccess)
+        val room = roomResult.getOrThrow()
+
+        // Lookup with exact code
+        val lookup1 = repository.findRoomPreviewByCode(room.inviteCode)
+        assertTrue(lookup1.isSuccess)
+        assertEquals(room.id, lookup1.getOrThrow().id)
+
+        // Lookup with code without MG- prefix
+        val bareCode = room.inviteCode.removePrefix("MG-")
+        val lookup2 = repository.findRoomPreviewByCode(bareCode)
+        assertTrue(lookup2.isSuccess)
+        assertEquals(room.id, lookup2.getOrThrow().id)
+
+        // Lookup with room ID
+        val lookup3 = repository.findRoomPreviewByCode(room.id)
+        assertTrue(lookup3.isSuccess)
+        assertEquals(room.id, lookup3.getOrThrow().id)
     }
 
     @Test

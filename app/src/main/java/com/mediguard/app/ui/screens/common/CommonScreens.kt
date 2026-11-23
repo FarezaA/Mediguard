@@ -303,7 +303,10 @@ fun MainScreen(
                         onNavigateToJoin = { onNavigate(NavRoute.JoinRoom.route) },
                         onNavigateToRooms = { selectedCaregiverTab = 1 }
                     )
-                    1 -> CaregiverRoomsScreen(repository = repository)
+                    1 -> CaregiverRoomsScreen(
+                        repository = repository,
+                        onNavigateToJoin = { onNavigate(NavRoute.JoinRoom.route) }
+                    )
                     2 -> CaregiverActivityScreen(repository = repository)
                     3 -> NotificationsScreen(repository = repository)
                     4 -> ProfileScreen(
