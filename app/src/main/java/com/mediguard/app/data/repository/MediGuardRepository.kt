@@ -3,6 +3,8 @@ package com.mediguard.app.data.repository
 import android.graphics.Bitmap
 import com.mediguard.app.data.model.*
 import com.mediguard.app.data.network.MediGuardApiClient
+import com.mediguard.app.notification.MedicationAlarmScheduler
+import com.mediguard.app.notification.NotificationHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +15,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MediGuardRepository {
+
+    companion object {
+        @Volatile
+        var instance: MediGuardRepository? = null
+            internal set
+    }
 
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -50,6 +58,7 @@ class MediGuardRepository {
     val auditLogs: StateFlow<List<AuditLog>> = _auditLogs.asStateFlow()
 
     private var sharedPrefs: android.content.SharedPreferences? = null
+    private var appContext: android.content.Context? = null
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -58,6 +67,7 @@ class MediGuardRepository {
     val colorBlindMode: StateFlow<ColorBlindMode> = _colorBlindMode.asStateFlow()
 
     fun initPreferences(context: android.content.Context) {
+        appContext = context.applicationContext
         val prefs = context.getSharedPreferences("mediguard_settings", android.content.Context.MODE_PRIVATE)
         sharedPrefs = prefs
         val savedTheme = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
@@ -72,6 +82,37 @@ class MediGuardRepository {
         } catch (_: Exception) {
             ColorBlindMode.OFF
         }
+
+        rescheduleUpcomingAlarms()
+    }
+
+    private val _pendingDoseActionId = MutableStateFlow<String?>(null)
+    val pendingDoseActionId: StateFlow<String?> = _pendingDoseActionId.asStateFlow()
+
+    fun setPendingDoseActionId(doseId: String?) {
+        _pendingDoseActionId.value = doseId
+    }
+
+    fun clearPendingDoseActionId() {
+        _pendingDoseActionId.value = null
+    }
+
+    private val shownNotifIds = Collections.synchronizedSet(mutableSetOf<String>())
+    private var isInitialSyncDone = false
+
+    fun rescheduleUpcomingAlarms() {
+        val ctx = appContext ?: return
+        val current = _currentUser.value ?: return
+        if (current.activeRole != UserRole.PASIEN) return
+
+        val today = getTodayDate()
+        val activeDoses = _doseEvents.value.filter {
+            it.scheduledDate == today &&
+            (it.status == DoseStatus.TERJADWAL || it.status == DoseStatus.MENUNGGU_LAPORAN)
+        }
+        for (dose in activeDoses) {
+            MedicationAlarmScheduler.scheduleDose(ctx, dose)
+        }
     }
 
     fun setThemeMode(mode: ThemeMode) {
@@ -85,6 +126,8 @@ class MediGuardRepository {
     }
 
     init {
+        instance = this
+
         // 1. Seed initial local demo data so the app is instantly usable offline
         seedInitialDemoData()
 
@@ -332,7 +375,34 @@ class MediGuardRepository {
                     )
                 }
                 _notifications.value = parsedNotifs
+
+                val current = _currentUser.value
+                val ctx = appContext
+                if (!isInitialSyncDone) {
+                    parsedNotifs.forEach { shownNotifIds.add(it.id) }
+                    isInitialSyncDone = true
+                } else if (current != null && ctx != null && current.activeRole == UserRole.PASIEN) {
+                    val newReminders = parsedNotifs.filter {
+                        it.userId == current.id && !it.isRead && !shownNotifIds.contains(it.id) && it.type == NotificationType.REMINDER
+                    }
+                    for (n in newReminders) {
+                        shownNotifIds.add(n.id)
+                        val dose = _doseEvents.value.find { it.id == n.relatedEntityId }
+                        NotificationHelper.showMedicationReminder(
+                            context = ctx,
+                            doseEventId = n.relatedEntityId ?: n.id,
+                            medicationName = dose?.medicationName ?: n.title,
+                            dosage = dose?.dosage ?: "",
+                            instructions = dose?.instructions ?: n.body,
+                            scheduledTime = dose?.scheduledTime ?: "",
+                            notificationId = n.id.hashCode()
+                        )
+                    }
+                }
             }
+
+            // Reschedule active alarms for updated dose events
+            rescheduleUpcomingAlarms()
 
             // Parse Audit Logs
             val logsArray = json.optJSONArray("auditLogs")
@@ -613,6 +683,7 @@ class MediGuardRepository {
         )
         _users.value = _users.value + newUser
         _currentUser.value = newUser
+        rescheduleUpcomingAlarms()
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -635,6 +706,7 @@ class MediGuardRepository {
             return Result.failure(IllegalArgumentException("Email atau kata sandi tidak sesuai."))
         }
         _currentUser.value = user
+        rescheduleUpcomingAlarms()
         return Result.success(user)
     }
 
@@ -647,6 +719,7 @@ class MediGuardRepository {
         val updated = current.copy(activeRole = newRole)
         _currentUser.value = updated
         _users.value = _users.value.map { if (it.id == updated.id) updated else it }
+        rescheduleUpcomingAlarms()
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -660,6 +733,7 @@ class MediGuardRepository {
     fun switchUser(userId: String) {
         val target = _users.value.find { it.id == userId } ?: return
         _currentUser.value = target
+        rescheduleUpcomingAlarms()
     }
 
     fun resetPassword(email: String): String {
@@ -1170,6 +1244,7 @@ class MediGuardRepository {
             )
         }
         _doseEvents.value = _doseEvents.value + newEvents
+        rescheduleUpcomingAlarms()
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -1200,6 +1275,7 @@ class MediGuardRepository {
             photoUri = photoUri
         )
         _doseEvents.value = _doseEvents.value.map { if (it.id == doseEventId) updated else it }
+        appContext?.let { ctx -> MedicationAlarmScheduler.cancelDose(ctx, doseEventId) }
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -1260,6 +1336,7 @@ class MediGuardRepository {
             notes = reason
         )
         _doseEvents.value = _doseEvents.value.map { if (it.id == doseEventId) updated else it }
+        appContext?.let { ctx -> MedicationAlarmScheduler.cancelDose(ctx, doseEventId) }
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -1283,6 +1360,16 @@ class MediGuardRepository {
 
         val updated = event.copy(snoozedUntil = snoozedTime)
         _doseEvents.value = _doseEvents.value.map { if (it.id == doseEventId) updated else it }
+        appContext?.let { ctx ->
+            MedicationAlarmScheduler.scheduleSnooze(
+                context = ctx,
+                doseEventId = doseEventId,
+                medicationName = event.medicationName,
+                dosage = event.dosage,
+                instructions = event.instructions,
+                minutes = minutes
+            )
+        }
 
         syncScope.launch {
             val payload = JSONObject().apply {
@@ -1322,6 +1409,7 @@ class MediGuardRepository {
             verification = verification
         )
         _doseEvents.value = _doseEvents.value.map { if (it.id == doseEventId) updated else it }
+        appContext?.let { ctx -> MedicationAlarmScheduler.cancelDose(ctx, doseEventId) }
 
         syncScope.launch {
             val payload = JSONObject().apply {
