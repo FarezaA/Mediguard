@@ -32,6 +32,7 @@ import com.mediguard.app.ui.screens.caregiver.*
 import com.mediguard.app.ui.screens.patient.*
 import com.mediguard.app.ui.theme.*
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -328,6 +329,8 @@ fun MainScreen(
     }
 }
 
+
+
 // ---------------- NOTIFICATIONS SCREEN ----------------
 
 @Composable
@@ -347,26 +350,57 @@ fun NotificationsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = "Pusat Notifikasi",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextDark
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = "Pengingat jadwal obat & pembaruan Medication Room",
                     fontSize = 12.sp,
                     color = TextMuted
                 )
-            }
 
-            if (notifications.any { !it.isRead }) {
-                TextButton(onClick = { repository.markAllNotificationsAsRead() }) {
-                    Text("Tandai Semua Dibaca", fontSize = 12.sp, color = TealPrimary, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (notifications.any { !it.isRead }) {
+                    Button(
+                        onClick = {
+                            repository.markAllNotificationsAsRead()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TealPrimary,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        )
+                    ) {
+                        Text(
+                            text = "Tandai Semua Dibaca",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
         }
+
+
 
         Spacer(modifier = Modifier.height(14.dp))
 
