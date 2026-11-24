@@ -3,6 +3,8 @@ package com.mediguard.app.data.repository
 import android.graphics.Bitmap
 import com.mediguard.app.data.model.*
 import com.mediguard.app.data.network.MediGuardApiClient
+import com.mediguard.app.data.network.SupabaseClientProvider
+import com.mediguard.app.data.network.SupabaseDataService
 import com.mediguard.app.notification.MedicationAlarmScheduler
 import com.mediguard.app.notification.NotificationHelper
 import kotlinx.coroutines.*
@@ -83,8 +85,25 @@ class MediGuardRepository {
             ColorBlindMode.OFF
         }
 
+        val savedSupaUrl = prefs.getString("supabase_url", null)
+        val savedSupaKey = prefs.getString("supabase_anon_key", null)
+        if (!savedSupaUrl.isNullOrBlank() && !savedSupaKey.isNullOrBlank()) {
+            SupabaseClientProvider.configure(savedSupaUrl, savedSupaKey)
+        }
+
         rescheduleUpcomingAlarms()
     }
+
+    fun configureSupabase(url: String, anonKey: String) {
+        SupabaseClientProvider.configure(url, anonKey)
+        sharedPrefs?.edit()
+            ?.putString("supabase_url", url)
+            ?.putString("supabase_anon_key", anonKey)
+            ?.apply()
+    }
+
+    val isSupabaseConnected: Boolean
+        get() = SupabaseDataService.isAvailable
 
     private val _pendingDoseActionId = MutableStateFlow<String?>(null)
     val pendingDoseActionId: StateFlow<String?> = _pendingDoseActionId.asStateFlow()
@@ -444,6 +463,12 @@ class MediGuardRepository {
     // ---------------- PHOTO UPLOAD & DOWNLOAD ----------------
 
     suspend fun uploadPhoto(bytes: ByteArray, filename: String): String {
+        if (SupabaseDataService.isAvailable) {
+            val supaRes = SupabaseDataService.uploadPhoto(bytes, filename)
+            if (supaRes.isSuccess) {
+                return supaRes.getOrThrow()
+            }
+        }
         val remoteUrl = MediGuardApiClient.uploadPhoto(bytes, filename)
         return remoteUrl ?: filename
     }
@@ -1311,6 +1336,12 @@ class MediGuardRepository {
             createdAt = getCurrentTimestamp()
         )
         _notifications.value = _notifications.value + notif
+
+        if (SupabaseDataService.isAvailable) {
+            syncScope.launch {
+                SupabaseDataService.sendNotification(notif)
+            }
+        }
 
         syncScope.launch {
             val payload = JSONObject().apply {
