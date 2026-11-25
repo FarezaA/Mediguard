@@ -32,7 +32,6 @@ import com.mediguard.app.ui.screens.caregiver.*
 import com.mediguard.app.ui.screens.patient.*
 import com.mediguard.app.ui.theme.*
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -304,10 +303,7 @@ fun MainScreen(
                         onNavigateToJoin = { onNavigate(NavRoute.JoinRoom.route) },
                         onNavigateToRooms = { selectedCaregiverTab = 1 }
                     )
-                    1 -> CaregiverRoomsScreen(
-                        repository = repository,
-                        onNavigateToJoin = { onNavigate(NavRoute.JoinRoom.route) }
-                    )
+                    1 -> CaregiverRoomsScreen(repository = repository)
                     2 -> CaregiverActivityScreen(repository = repository)
                     3 -> NotificationsScreen(repository = repository)
                     4 -> ProfileScreen(
@@ -329,15 +325,24 @@ fun MainScreen(
     }
 }
 
-
-
 // ---------------- NOTIFICATIONS SCREEN ----------------
 
 @Composable
 fun NotificationsScreen(
     repository: MediGuardRepository
 ) {
-    val notifications = repository.getNotificationsForCurrentUser()
+    // Diamati lewat StateFlow agar layar langsung ter-update saat notifikasi berubah
+    // (tandai dibaca, notifikasi baru, sinkron server), tanpa perlu keluar-masuk layar.
+    val allNotifications by repository.notifications.collectAsState()
+    val currentUser by repository.currentUser.collectAsState()
+    val notifications = remember(allNotifications, currentUser) {
+        val userId = currentUser?.id
+        if (userId == null) {
+            emptyList<NotificationItem>()
+        } else {
+            allNotifications.filter { it.userId == userId }.sortedByDescending { it.createdAt }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -347,60 +352,40 @@ fun NotificationsScreen(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Pusat Notifikasi",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextDark
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
                     text = "Pengingat jadwal obat & pembaruan Medication Room",
                     fontSize = 12.sp,
                     color = TextMuted
                 )
+            }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (notifications.any { !it.isRead }) {
-                    Button(
-                        onClick = {
-                            repository.markAllNotificationsAsRead()
-                        },
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .height(40.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = TealPrimary,
-                            contentColor = Color.White
-                        ),
-                        contentPadding = PaddingValues(
-                            horizontal = 16.dp,
-                            vertical = 8.dp
-                        )
-                    ) {
-                        Text(
-                            text = "Tandai Semua Dibaca",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
+            if (notifications.any { !it.isRead }) {
+                Button(
+                    onClick = { repository.markAllNotificationsAsRead() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        "Tandai Semua Dibaca",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
         }
-
-
 
         Spacer(modifier = Modifier.height(14.dp))
 
