@@ -1,6 +1,7 @@
 package com.mediguard.app.data.repository
 
 import android.graphics.Bitmap
+import android.util.Log
 import com.mediguard.app.data.model.*
 import com.mediguard.app.data.network.MediGuardApiClient
 import com.mediguard.app.data.network.SupabaseClientProvider
@@ -472,6 +473,8 @@ class MediGuardRepository {
             val supaRes = SupabaseDataService.uploadPhoto(bytes, filename)
             if (supaRes.isSuccess) {
                 return supaRes.getOrThrow()
+            } else {
+                Log.e("SupabaseSync", "Gagal upload foto ke Supabase", supaRes.exceptionOrNull())
             }
         }
         val remoteUrl = MediGuardApiClient.uploadPhoto(bytes, filename)
@@ -716,6 +719,10 @@ class MediGuardRepository {
         rescheduleUpcomingAlarms()
 
         syncScope.launch {
+            if (SupabaseDataService.isAvailable) {
+                SupabaseDataService.upsertProfile(newUser)
+                    .onFailure { Log.e("SupabaseSync", "Gagal upsert profile user baru", it) }
+            }
             val payload = JSONObject().apply {
                 put("id", newUser.id)
                 put("name", newUser.name)
@@ -1344,7 +1351,14 @@ class MediGuardRepository {
 
         if (SupabaseDataService.isAvailable) {
             syncScope.launch {
+                val targetUser = _users.value.find { it.id == targetPatientId }
+                if (targetUser != null) {
+                    SupabaseDataService.upsertProfile(targetUser)
+                        .onFailure { Log.e("SupabaseSync", "Gagal upsert profile target ($targetPatientId)", it) }
+                }
                 SupabaseDataService.sendNotification(notif)
+                    .onSuccess { Log.d("SupabaseSync", "Notifikasi berhasil dikirim ke Supabase: ${notif.id}") }
+                    .onFailure { Log.e("SupabaseSync", "Gagal kirim notifikasi ke Supabase", it) }
             }
         }
 

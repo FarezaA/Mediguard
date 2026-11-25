@@ -2,6 +2,7 @@ package com.mediguard.app.data.network
 
 import com.mediguard.app.data.model.DoseEvent
 import com.mediguard.app.data.model.NotificationItem
+import com.mediguard.app.data.model.User
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,16 @@ data class SupabaseDoseEventDto(
     @SerialName("reminder_count") val reminderCount: Int = 0,
     @SerialName("snoozed_until") val snoozedUntil: String? = null,
     val notes: String? = null
+)
+
+@Serializable
+data class SupabaseProfileDto(
+    val id: String,
+    val name: String,
+    val email: String,
+    @SerialName("password_hash") val passwordHash: String = "password123",
+    @SerialName("active_role") val activeRole: String = "PASIEN",
+    @SerialName("created_at") val createdAt: String? = null
 )
 
 @Serializable
@@ -72,6 +83,26 @@ object SupabaseDataService {
                 .select()
                 .decodeList<SupabaseDoseEventDto>()
             Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun upsertProfile(user: User): Result<Unit> = withContext(Dispatchers.IO) {
+        if (!isAvailable) {
+            return@withContext Result.failure(IllegalStateException("Supabase belum dikonfigurasi"))
+        }
+        try {
+            val dto = SupabaseProfileDto(
+                id = user.id,
+                name = user.name,
+                email = user.email,
+                passwordHash = user.password,
+                activeRole = user.activeRole.name,
+                createdAt = user.createdAt
+            )
+            SupabaseClientProvider.client.postgrest.from("profiles").upsert(dto)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
