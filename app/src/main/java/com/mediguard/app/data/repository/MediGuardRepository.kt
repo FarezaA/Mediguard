@@ -87,8 +87,13 @@ class MediGuardRepository {
 
         val savedSupaUrl = prefs.getString("supabase_url", null)
         val savedSupaKey = prefs.getString("supabase_anon_key", null)
-        if (!savedSupaUrl.isNullOrBlank() && !savedSupaKey.isNullOrBlank()) {
-            SupabaseClientProvider.configure(savedSupaUrl, savedSupaKey)
+        // Prioritas: SharedPreferences → BuildConfig (dari local.properties)
+        val urlToUse = if (!savedSupaUrl.isNullOrBlank()) savedSupaUrl
+                       else SupabaseClientProvider.DEFAULT_SUPABASE_URL
+        val keyToUse = if (!savedSupaKey.isNullOrBlank()) savedSupaKey
+                       else SupabaseClientProvider.DEFAULT_SUPABASE_ANON_KEY
+        if (urlToUse.isNotBlank() && keyToUse.isNotBlank()) {
+            SupabaseClientProvider.configure(urlToUse, keyToUse)
         }
 
         rescheduleUpcomingAlarms()
