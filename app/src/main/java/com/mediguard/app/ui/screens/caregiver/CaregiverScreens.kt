@@ -88,15 +88,21 @@ fun CaregiverDashboardScreen(
             .background(AppBackground),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        // ── 1. Gradient Header ──
+        // ── 1. Hero Card: Friendly Greeting & Join Action ──
         item {
-            Box(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(PrimaryGradient)
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 2.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = TealPrimary),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -144,7 +150,7 @@ fun CaregiverDashboardScreen(
                         }
 
                         Surface(
-                            color = Color.White.copy(alpha = 0.20f),
+                            color = Color.White.copy(alpha = 0.18f),
                             shape = RoundedCornerShape(50.dp)
                         ) {
                             Text(
@@ -174,28 +180,44 @@ fun CaregiverDashboardScreen(
                                 Icons.Default.CalendarToday,
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.85f),
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = today,
                                 fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.85f),
+                                color = Color.White.copy(alpha = 0.90f),
+                                fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
 
-                        OutlinedButton(
-                            onClick = onNavigateToJoin,
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.65f)),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        Surface(
+                            modifier = Modifier.clickable { onNavigateToJoin() },
+                            color = Color.White.copy(alpha = 0.22f),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("+ Gabung Kode", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Gabung Kode",
+                                    fontSize = 11.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -208,7 +230,8 @@ fun CaregiverDashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Pending Verifications
                 Card(
@@ -218,12 +241,15 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(StatusTakenBg),
                             contentAlignment = Alignment.Center
@@ -231,7 +257,14 @@ fun CaregiverDashboardScreen(
                             Icon(Icons.Default.FactCheck, contentDescription = null, tint = StatusTaken, modifier = Modifier.size(18.dp))
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("${pendingVerifications.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = StatusTaken)
+                        Text(
+                            "${pendingVerifications.size}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusTaken,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             "Perlu Verifikasi",
                             fontSize = 11.sp,
@@ -252,12 +285,15 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(StatusPendingBg),
                             contentAlignment = Alignment.Center
@@ -265,7 +301,14 @@ fun CaregiverDashboardScreen(
                             Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = StatusPending, modifier = Modifier.size(18.dp))
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("${lateDoses.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = StatusPending)
+                        Text(
+                            "${lateDoses.size}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusPending,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             "Belum Lapor",
                             fontSize = 11.sp,
@@ -286,12 +329,15 @@ fun CaregiverDashboardScreen(
                     border = BorderStroke(1.dp, SurfaceBorder)
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(34.dp)
                                 .clip(CircleShape)
                                 .background(TealContainer),
                             contentAlignment = Alignment.Center
@@ -299,7 +345,14 @@ fun CaregiverDashboardScreen(
                             Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(18.dp))
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("${approvedRoomIds.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TealPrimary)
+                        Text(
+                            "${approvedRoomIds.size}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TealPrimary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             "Ruang Pasien",
                             fontSize = 11.sp,
@@ -1016,16 +1069,6 @@ fun JoinRoomScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = "Masukkan kode undangan atau ID yang dibagikan oleh pasien untuk mengajukan akses pemantauan keluarga layaknya Google Classroom.",
-            fontSize = 12.sp,
-            color = TextMuted,
-            lineHeight = 17.sp,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-
         Spacer(modifier = Modifier.height(14.dp))
 
         if (errorMessage != null) {
@@ -1128,21 +1171,6 @@ fun JoinRoomScreen(
                         Text(text = previewRoom!!.description, fontSize = 12.sp, color = TextMuted)
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Surface(
-                        color = SurfaceSubtle,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Catatan Privasi: Data jadwal & obat hanya dapat diakses setelah pasien menyetujui permintaan bergabung Anda.",
-                            modifier = Modifier.padding(10.dp),
-                            fontSize = 11.sp,
-                            color = TextDark,
-                            lineHeight = 15.sp
-                        )
-                    }
-
                     Spacer(modifier = Modifier.height(14.dp))
                     Button(
                         onClick = {
@@ -1204,13 +1232,6 @@ fun CaregiverRoomsScreen(
                     fontWeight = FontWeight.Bold,
                     color = TextDark
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Daftar ruang pengobatan pasien yang Anda dampingi",
-                    fontSize = 12.sp,
-                    color = TextMuted,
-                    lineHeight = 16.sp
-                )
             }
 
             Button(
@@ -1249,14 +1270,6 @@ fun CaregiverRoomsScreen(
                     }
                     Spacer(modifier = Modifier.height(14.dp))
                     Text("Belum Ada Ruang yang Dipantau", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        "Gabung ke Medication Room menggunakan kode undangan atau ID yang dibagikan oleh pasien (seperti Google Classroom) untuk mulai mendampingi minum obat.",
-                        fontSize = 12.sp,
-                        color = TextMuted,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 17.sp
-                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { showJoinDialog = true },
@@ -1476,10 +1489,7 @@ fun CaregiverRoomsScreen(
                         Icon(Icons.Default.MeetingRoom, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Gabung Medication Room", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
-                        Text("Gabung menggunakan Kode atau ID Ruang", fontSize = 11.sp, color = TextMuted)
-                    }
+                    Text("Gabung Medication Room", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
                 }
             },
             text = {
@@ -1530,13 +1540,6 @@ fun CaregiverRoomsScreen(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         color = TextDark
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Mintalah kode undangan kepada pasien (contoh: MG-8821 atau ID ruang), lalu masukkan di sini.",
-                        fontSize = 11.sp,
-                        color = TextMuted,
-                        lineHeight = 15.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -1685,11 +1688,6 @@ fun CaregiverActivityScreen(
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = TextDark
-        )
-        Text(
-            text = "Pantau linimasa kepatuhan dan riwayat pengamatan langsung",
-            fontSize = 12.sp,
-            color = TextMuted
         )
 
         Spacer(modifier = Modifier.height(14.dp))

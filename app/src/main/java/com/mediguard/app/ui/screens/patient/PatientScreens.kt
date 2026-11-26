@@ -314,14 +314,14 @@ fun PatientDashboardScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Dilaporkan Mandiri
                     AdherenceMetricCard(
                         modifier = Modifier.weight(1f),
                         count = reportedCount,
                         label = "Dilaporkan",
-                        sublabel = "Laporan Mandiri",
                         tint = StatusTaken,
                         bgTint = StatusTakenBg,
                         icon = Icons.Default.EditNote
@@ -332,7 +332,6 @@ fun PatientDashboardScreen(
                         modifier = Modifier.weight(1f),
                         count = verifiedCount,
                         label = "Terverifikasi",
-                        sublabel = "Pengamatan Nyata",
                         tint = StatusVerified,
                         bgTint = StatusVerifiedBg,
                         icon = Icons.Default.Verified
@@ -343,7 +342,6 @@ fun PatientDashboardScreen(
                         modifier = Modifier.weight(1f),
                         count = pendingReportCount,
                         label = "Menunggu",
-                        sublabel = "Jadwal Belum",
                         tint = StatusPending,
                         bgTint = StatusPendingBg,
                         icon = Icons.Default.Schedule
@@ -367,11 +365,6 @@ fun PatientDashboardScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = TextDark
-                    )
-                    Text(
-                        text = "Catat laporan setelah Anda mengonsumsi obat",
-                        fontSize = 12.sp,
-                        color = TextMuted
                     )
                 }
 
@@ -591,15 +584,6 @@ fun PatientDashboardScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = "Akses kamera fisik untuk mengambil foto bukti obat/gelas minum secara langsung.",
-                                fontSize = 11.sp,
-                                color = Color(0xFF14532D),
-                                lineHeight = 15.sp
-                            )
-
                             Spacer(modifier = Modifier.height(10.dp))
 
                             if (capturedBitmap != null) {
@@ -656,14 +640,6 @@ fun PatientDashboardScreen(
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "Transparansi: Bukti foto nyata akan otomatis tersinkronisasi ke perangkat pemantau keluarga.",
-                        fontSize = 11.sp,
-                        color = TextMuted,
-                        lineHeight = 15.sp
-                    )
                 }
             },
             confirmButton = {
@@ -878,7 +854,6 @@ private fun AdherenceMetricCard(
     modifier: Modifier = Modifier,
     count: Int,
     label: String,
-    sublabel: String,
     tint: Color,
     bgTint: Color,
     icon: ImageVector
@@ -893,8 +868,9 @@ private fun AdherenceMetricCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 6.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 6.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
@@ -912,23 +888,17 @@ private fun AdherenceMetricCard(
                 text = "$count",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = tint
+                color = tint,
+                textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = label,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextDark,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = sublabel,
-                fontSize = 9.5.sp,
-                color = TextMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center
@@ -1087,7 +1057,7 @@ fun DoseEventCard(
                         Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Pengingat: Pemantau mengingatkan Anda (${dose.reminderCount}x). Jangan lupa minum obat ya!",
+                            text = "Jangan lupa minum obat ya!",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF92400E)
@@ -1133,7 +1103,7 @@ fun DoseEventCard(
             } else if (dose.status == DoseStatus.DILAPORKAN_DIMINUM) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "• Laporan mandiri tercatat (${dose.reportedAt}). Menunggu verifikasi pengamatan langsung dari pemantau.",
+                    text = "• Laporan tercatat (${dose.reportedAt}). Menunggu verifikasi dari pemantau.",
                     fontSize = 11.sp,
                     color = TextMuted,
                     lineHeight = 16.sp
@@ -1384,13 +1354,6 @@ fun MedicationListScreen(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextDark
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "Kelola obat resep & jadwal konsumsi rutin Anda",
-                        fontSize = 12.sp,
-                        color = TextMuted,
-                        lineHeight = 16.sp
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -1938,21 +1901,12 @@ fun PatientRoomsScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Column {
-                Text(
-                    text = "Medication Room",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextDark
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Kelola ruang privat & izin pengawasan obat Anda",
-                    fontSize = 12.sp,
-                    color = TextMuted,
-                    lineHeight = 16.sp
-                )
-            }
+            Text(
+                text = "Medication Room",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -1978,13 +1932,6 @@ fun PatientRoomsScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Anda belum memiliki Medication Room.", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            "Buat ruang pemantauan agar keluarga dapat mendampingi jadwal minum obat Anda seperti Google Classroom.",
-                            fontSize = 12.sp,
-                            color = TextMuted,
-                            textAlign = TextAlign.Center
-                        )
                         Spacer(modifier = Modifier.height(14.dp))
                         Button(
                             onClick = { showCreateRoomDialog = true },
@@ -2229,14 +2176,6 @@ fun PatientRoomsScreen(
                                                 }
                                             }
                                         }
-
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        Text(
-                                            text = "Bagikan kode atau ID ini kepada pemantau/keluarga seperti Google Classroom agar mereka dapat bergabung ke ruang Anda.",
-                                            fontSize = 11.sp,
-                                            color = TextMuted,
-                                            lineHeight = 15.sp
-                                        )
                                     }
                                 }
 
@@ -2256,30 +2195,8 @@ fun PatientRoomsScreen(
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text("Penyesuaian & Pengaturan Ruang", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextDark)
-                                            Text("Klik untuk mengubah nama dan deskripsi ruang ini.", fontSize = 11.sp, color = TextMuted)
                                         }
                                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted)
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Surface(
-                                    color = SurfaceSubtle,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Shield, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Privasi Terlindungi: Siapapun yang memasukkan kode ini tetap memerlukan persetujuan Anda di tab 'Anggota' sebelum dapat melihat jadwal obat.",
-                                            fontSize = 11.sp,
-                                            color = TextDark,
-                                            lineHeight = 15.sp
-                                        )
                                     }
                                 }
                             }
@@ -2674,13 +2591,6 @@ fun PatientRoomsScreen(
             title = { Text("Buat Medication Room Baru", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark) },
             text = {
                 Column {
-                    Text(
-                        text = "Setiap room memiliki kode undangan unik layaknya Google Classroom yang bisa dibagikan ke pemantau/keluarga.",
-                        fontSize = 12.sp,
-                        color = TextMuted,
-                        lineHeight = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = roomName,
                         onValueChange = { roomName = it },
@@ -2740,13 +2650,6 @@ fun PatientRoomsScreen(
             title = { Text("Penyesuaian Medication Room", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark) },
             text = {
                 Column {
-                    Text(
-                        text = "Lakukan penyesuaian nama atau deskripsi pada ruang '${activeRoom.name}':",
-                        fontSize = 12.sp,
-                        color = TextMuted,
-                        lineHeight = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
@@ -2852,11 +2755,6 @@ fun PatientHistoryScreen(
             fontWeight = FontWeight.Bold,
             color = TextDark
         )
-        Text(
-            text = "Transparansi catatan kepatuhan dan linimasa pengobatan",
-            fontSize = 12.sp,
-            color = TextMuted
-        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -2935,31 +2833,6 @@ fun PatientHistoryScreen(
                                     Text("Dosis Terlewat:", fontSize = 13.sp, color = TextMuted)
                                     Text("${stats.missed} dosis", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = StatusMissed)
                                 }
-                            }
-                        }
-                    }
-
-                    item {
-                        Surface(
-                            color = TealContainer,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Info, contentDescription = null, tint = TealPrimary, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Catatan Integritas Data Medis:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TealPrimary)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "1. Laporan mandiri dan verifikasi langsung dibedakan secara tegas.\n" +
-                                            "2. Verifikasi hanya sah jika pemantau menyaksikan langsung saat konsumsi.\n" +
-                                            "3. Riwayat ini mencerminkan keterbukaan tanpa saling menghakimi.",
-                                    fontSize = 11.sp,
-                                    color = OnTealContainer,
-                                    lineHeight = 16.sp
-                                )
                             }
                         }
                     }

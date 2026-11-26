@@ -174,3 +174,4 @@ data class AdherenceStats(
     val compliancePercentage: Double,
     val verifiedPercentage: Double
 )
+// Di MediGuardRepository (semua bertipe StateFlow)

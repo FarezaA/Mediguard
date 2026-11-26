@@ -362,11 +362,6 @@ fun NotificationsScreen(
                     fontWeight = FontWeight.Bold,
                     color = TextDark
                 )
-                Text(
-                    text = "Pengingat jadwal obat & pembaruan Medication Room",
-                    fontSize = 12.sp,
-                    color = TextMuted
-                )
             }
 
             if (notifications.any { !it.isRead }) {
@@ -528,11 +523,6 @@ fun ProfileScreen(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextDark
-            )
-            Text(
-                text = "Kelola data akun, peran aktif, dan privasi pengawasan",
-                fontSize = 12.sp,
-                color = TextMuted
             )
         }
 
@@ -719,17 +709,17 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Mode Buta Warna (Aksesibilitas Medis)",
+                        text = "Mode Buta Warna",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         color = TextDark
                     )
-                    Text(
-                        text = "Menyesuaikan palet warna status kepatuhan obat dan menambahkan indikator bentuk visual agar mudah dibedakan tanpa mengandalkan warna semata.",
-                        fontSize = 11.5.sp,
-                        color = TextMuted,
-                        lineHeight = 16.sp
-                    )
+//                    Text(
+//                        text = "Menyesuaikan palet warna status kepatuhan obat dan menambahkan indikator bentuk visual agar mudah dibedakan tanpa mengandalkan warna semata.",
+//                        fontSize = 11.5.sp,
+//                        color = TextMuted,
+//                        lineHeight = 16.sp
+//                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -855,12 +845,6 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = "Sinkronisasi antar-perangkat (Pasien & Pemantau) berjalan via server:",
-                        fontSize = 12.sp,
-                        color = TextMuted
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = serverUrl,
                         fontSize = 12.sp,
